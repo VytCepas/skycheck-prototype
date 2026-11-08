@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyCheck prototype</title>
+<style>
+:root{
+  --ink:#1d1d1f; --muted:#5f6368; --line:#d0d3d8; --bg:#eef0f3; --card:#ffffff;
+  --soft:#f4f5f7; --red:#c62828; --redbg:#fdecea; --amber:#a35c00; --amberbg:#fff4e0;
+  --blue:#1f5fa8; --bluebg:#e8f0fb; --green:#2e6b3a; --greenbg:#e7f3ea;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{display:flex;gap:28px;justify-content:center;align-items:flex-start;padding:24px 16px;flex-wrap:wrap}
+.panel{width:300px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel h1{font-size:17px;margin:0 0 4px}
+.panel p{margin:6px 0;color:var(--muted);font-size:13px}
+.panel label{display:block;padding:7px 8px;border-radius:8px;cursor:pointer;font-size:14px}
+.panel label:hover{background:var(--soft)}
+.panel .legend{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12px;color:var(--muted)}
+.phone{width:390px;height:800px;background:#fff;border:10px solid #222;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:26px;font-size:12px;display:flex;justify-content:space-between;padding:5px 18px 0;color:#444}
+.top{display:flex;align-items:center;gap:10px;padding:6px 16px 10px;border-bottom:1px solid var(--line)}
+.top b{font-size:17px}
+.top .back{border:0;background:none;font-size:22px;cursor:pointer;padding:0 6px 0 0;color:var(--ink)}
+.screen{flex:1;overflow:auto;padding:14px 16px 20px}
+.strip{display:flex;gap:8px;align-items:center;font-size:13px;padding:8px 10px;border-radius:10px;margin-bottom:12px}
+.strip.ok{background:var(--greenbg);color:var(--green)}
+.strip.warn{background:var(--amberbg);color:var(--amber)}
+.strip.alert{background:var(--red);color:#fff;font-weight:600}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.tag.ai{background:var(--bluebg);color:var(--blue)}
+.tag.off{background:var(--greenbg);color:var(--green)}
+.tag.you{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.tag.red{background:var(--red);color:#fff}
+h2{font-size:21px;margin:6px 0 8px;line-height:1.25}
+h3{font-size:15px;margin:14px 0 6px}
+.small{font-size:13px;color:var(--muted)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
+.card.red{border:2px solid var(--red);background:var(--redbg)}
+.card.amber{border:1px solid #e6c48f;background:var(--amberbg)}
+.card.blue{border:1px solid #b9cdea;background:var(--bluebg)}
+.btn{display:block;width:100%;border:1px solid var(--ink);background:#fff;color:var(--ink);font-size:16px;font-weight:600;padding:13px;border-radius:12px;margin:8px 0;cursor:pointer;text-align:center}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.ghost{border-color:var(--line);font-weight:500}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.row{display:flex;gap:8px}.row .btn{margin:6px 0}
+.cand{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:9px 0}
+.cand:first-of-type{border-top:0}
+.cand .name{font-weight:600}
+.word{font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.w-likely{background:var(--ink);color:#fff}
+.w-possible{background:#fff;border:1.5px solid var(--ink)}
+.w-unlikely{background:var(--soft);color:var(--muted)}
+.armed{color:var(--red);font-size:12px;font-weight:600}
+ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+.viewfinder{height:300px;border-radius:14px;background:linear-gradient(#2b3440,#11161c);position:relative;display:flex;align-items:center;justify-content:center;color:#cfd6df;font-size:13px;text-align:center;padding:20px}
+.viewfinder .dot{width:10px;height:6px;background:#000;border-radius:3px;position:absolute;top:110px;left:220px;box-shadow:0 0 0 1px #556}
+.rec{position:absolute;top:12px;left:12px;background:var(--red);color:#fff;font-size:12px;padding:3px 8px;border-radius:6px}
+.wave{display:flex;gap:3px;align-items:center;height:60px;justify-content:center;margin:10px 0}
+.wave i{display:block;width:5px;background:var(--ink);border-radius:3px}
+.steps{list-style:none;padding:0;margin:8px 0}
+.steps li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:14px}
+.steps .s{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:12px}
+.steps .s.done{background:var(--green);border-color:var(--green);color:#fff}
+.field{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:7px 0}
+.field .k{font-size:12px;color:var(--muted)}
+.field .v{font-size:15px}
+.field .edit{float:right;font-size:13px;color:var(--blue);cursor:pointer;border:0;background:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:13px;cursor:pointer;background:#fff}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.compass{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top-left-radius:18px;border-top-right-radius:18px;box-shadow:0 -6px 30px rgba(0,0,0,.25);padding:16px;max-height:75%;overflow:auto;display:none}
+.sheet.show{display:block}
+.shade{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none}
+.shade.show{display:block}
+.notif{border-radius:14px;background:#f1f1f3;padding:12px;margin:10px 0;border:1px solid var(--line)}
+.screen-id{position:absolute;bottom:4px;right:12px;font-size:10px;color:#aaa}
+.phoneonly .panel{display:none}.phoneonly .wrap{padding:10px}.phoneonly .screen-id{display:none}
+@media (max-width:760px){.panel{width:100%;max-width:390px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel" aria-label="Demo controls">
+    <h1>SkyCheck · HW3 prototype</h1>
+    <p>Mid-fidelity, clickable. AI answers are scripted (no model). Start with <b>B</b>, the primary scenario, then try the others.</p>
+    <div id="scenarios"></div>
+    <button class="btn ghost" onclick="restart()">Restart scenario</button>
+    <div class="legend">
+      <div><span class="tag off">Official</span> comes from LT72 / 112, not from the AI</div>
+      <div style="margin-top:6px"><span class="tag ai">AI guess</span> made by the model on the phone, can be wrong</div>
+      <div style="margin-top:6px"><span class="tag you">You</span> filled in or confirmed by the user</div>
+      <p>Words, not scores: <b>Likely</b> / <b>Possible</b> / <b>Unlikely</b> / <b>Can’t tell</b>.</p>
+    </div>
+  </div>
+  <div class="phone" aria-label="Phone screen">
+    <div class="status"><span id="clock">19:31</span><span id="sig">▂▄▆ 4G</span></div>
+    <div class="top"><button class="back" id="back" onclick="goBack()" aria-label="Back">‹</button><b id="title">SkyCheck</b></div>
+    <div class="screen" id="screen"></div>
+    <div class="shade" id="shade" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet" role="dialog"></div>
+    <div class="screen-id" id="sid"></div>
+  </div>
+</div>
+<script>
+const SCEN = {
+  A:{label:"A · Simple case: hobby drone, AI right", alert:"none", dark:false, offline:false, result:"civil"},
+  B:{label:"B · Primary scenario: can’t tell, could be armed", alert:"none", dark:false, offline:false, result:"unsure"},
+  C:{label:"C · AI wrong, corrected next day", alert:"none", dark:false, offline:false, result:"wrong"},
+  D:{label:"D · Official air-raid alert is on", alert:"red", dark:false, offline:false, result:"civil"},
+  E:{label:"E · Dark video, weak signal", alert:"unknown", dark:true, offline:true, result:"unsure"}
+};
+let sc = "B", hist = [], cur = "home", st = {};
+const $ = id => document.getElementById(id);
+
+function reset(){ st = {usedSound:false, correction:null, include:true, dir:"E", inside:false, feedback:null, notes:[], where:null, noticed:null, editing:null}; }
+const DEF = {where:"Your location: Mokyklos g., Pabradė. Shared with 112 only during the call"};
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]); }
+function fieldV(k, dflt){ const v = st[k] ?? dflt;
+  if(st.editing===k) return `<textarea id="ed" rows="3" style="width:100%;font:inherit;padding:6px;border:1px solid var(--line);border-radius:8px">${esc(v)}</textarea>`
+    + `<div class="row"><button class="btn primary" onclick="st['${k}']=$('ed').value.trim()||null; st.editing=null; render()">Save</button>`
+    + `<button class="btn ghost" onclick="st.editing=null; render()">Cancel</button></div>`;
+  return `<div class="v">${esc(v)}</div>${st[k]?'<div class="small">Changed by you</div>':''}`; }
+function editBtn(k){ return st.editing===k ? "" : `<button class="edit" onclick="st.editing='${k}'; render(); $('ed').focus()">Edit</button>`; }
+function restart(){ reset(); hist=[]; show("home", false); }
+function pickScen(k){ sc=k; restart(); drawScen(); }
+function drawScen(){
+  $("scenarios").innerHTML = Object.entries(SCEN).map(([k,v]) =>
+   `<label><input type="radio" name="sc" ${k===sc?"checked":""} onchange="pickScen('${k}')"> ${v.label}</label>`).join("");
+}
+function show(id, push=true){ if(push && cur!==id) hist.push(cur); cur=id; closeSheet(); render(); }
+function goBack(){ if(hist.length){ cur=hist.pop(); closeSheet(); render(); } }
+function S(){ return SCEN[sc]; }
+
+function alertStrip(){
+  const a=S().alert;
+  if(a==="red") return `<div class="strip alert" role="alert">⚠ AIR-RAID ALERT · official · LT72</div>`;
+  if(a==="unknown") return `<div class="strip warn"><span class="tag" style="background:#fff">!</span> Couldn’t check official alerts (no signal). Treat it as possible danger.</div>`;
+  return `<div class="strip ok"><span class="tag off">Official</span> No alert for your area · checked 19:31</div>`;
+}
+
+const RESULTS = {
+  civil:{ head:"Most likely a small camera drone", word:"Likely", armed:false,
+    cands:[["Small camera drone (4 rotors)","Likely",false],["Larger hobby drone","Possible",false],["Smuggling balloon","Unlikely",false]],
+    why:["High buzz that changes pitch as it turns: typical of 4 small rotors","Hovers, then changes direction: balloons drift with the wind","Small in the frame at the distance you estimated"]},
+  unsure:{ head:"Can’t tell from this clip", word:"Can’t tell", armed:true,
+    cands:[["Small camera drone","Possible",false],["Shahed-type attack drone or decoy","Possible",true],["Light aircraft","Unlikely",false]],
+    why:["Engine-like drone, not a rotor buzz: fits both a decoy and an attack drone","The video is too short to see the wing shape","Decoys and armed versions look and sound the same on a phone"]},
+  wrong:{ head:"Most likely a small camera drone", word:"Likely", armed:false,
+    cands:[["Small camera drone (4 rotors)","Likely",false],["Smuggling balloon","Possible",false],["Larger hobby drone","Unlikely",false]],
+    why:["Steady dark shape that seems to hover","Short clip, wind noise covers most of the sound"]}
+};
+function R(){ let r = RESULTS[S().result]; if(st.correction==="balloon") r = {head:"With your notes: possibly a smuggling balloon", word:"Possible", armed:false,
+  cands:[["Smuggling balloon","Possible",false],["Small camera drone","Possible",false],["Larger hobby drone","Unlikely",false]],
+  why:["You said: no sound, drifting with the wind, lights were off","Balloons drift with the wind; drones change direction","Your notes moved “balloon” up. The clip alone pointed to a drone"]}; return r; }
+const wcls = w => w==="Likely"?"w-likely":w==="Possible"?"w-possible":"w-unlikely";
+
+const VIEWS = {
+home(){ return {title:"SkyCheck", back:false, html:`
+  ${alertStrip()}
+  ${S().alert==="red" ? `
+    <div class="card red"><h2 style="color:var(--red)">Go to a shelter now</h2>
+    <p>During an air-raid alert, don’t film or photograph flying objects. <b>No shot is worth your life.</b></p>
+    <p class="small">Source: LT72 official guidance</p></div>
+    <button class="btn danger" onclick="show('shelter')">Show nearest shelter</button>
+    <button class="btn" disabled title="Turned off during an alert">Identify something (off during alert)</button>
+    <p class="small">Identification comes back when the official alert ends.</p>` : `
+    <h2>What did you see or hear?</h2>
+    <div class="card amber"><b>Safety first.</b> If it could be dangerous, go inside or under cover. Don’t go closer. Record only from where you are.</div>
+    <button class="btn primary" onclick="show('capture')">🎥 Film or take a photo</button>
+    <button class="btn" onclick="st.usedSound=true; show('sound')">🎙 Record the sound only</button>
+    <button class="btn ghost" onclick="show('capture')">Upload a clip I already have</button>
+    <p class="small">Works offline. Your clip and location stay on this phone unless you choose to send them to 112.</p>`}
+`};},
+shelter(){ return {title:"Nearest shelter", html:`
+  ${alertStrip()}
+  <div class="card"><b>Basement parking, Mokyklos g. 4</b><br><span class="small">350 m · about 4 min walk · LT72 shelter map</span></div>
+  <div class="viewfinder" style="height:200px;background:#dfe6dc;color:#445">[map from LT72 shelter list]</div>
+  <h3>If you can’t get there</h3>
+  <ul><li>A room with no windows, two walls from the outside</li><li>Stay away from windows</li><li>Keep children and pets with you</li></ul>
+  <button class="btn primary" onclick="show('inshelter')">I’m in a safe place</button>`};},
+inshelter(){ return {title:"Stay safe", html:`
+  ${alertStrip()}
+  <h2>Stay where you are until the all-clear</h2>
+  <p>We’ll notify you when LT72 ends the alert. Text your family instead of calling, to keep lines free.</p>
+  <div class="card"><b>Saw something hit the ground, or someone is hurt?</b><br>Call 112. That is what the line is for during an alert.</div>
+  <button class="btn danger" onclick="call112direct()">Call 112</button>`};},
+capture(){ const dark=S().dark; return {title:"Record", html:`
+  ${alertStrip()}
+  <div class="viewfinder"><span class="rec">● REC 0:07</span><div class="dot"></div>
+   <div style="position:absolute;bottom:14px;left:14px;right:14px">Keep it in the frame while it turns. Its side shape helps most.<br>Sound is recorded too.</div></div>
+  <ul class="steps">
+   <li><span class="s done">✓</span> Don’t go closer: zoom instead</li>
+   <li><span class="s done">✓</span> Hold still for 5–10 seconds</li>
+   <li><span class="s">3</span> Note where it is going (we’ll ask)</li></ul>
+  <button class="btn primary" onclick="show('${dark?'quality':'check'}')">Stop and check</button>`};},
+sound(){ return {title:"Record sound", html:`
+  ${alertStrip()}
+  <h2>Hold the phone towards the sound</h2>
+  <div class="wave">${Array.from({length:34},(_,i)=>`<i style="height:${10+Math.abs(Math.sin(i*0.7))*48}px"></i>`).join("")}</div>
+  <p class="small">0:09 recorded. 10 seconds is enough. You can do this from inside, with a window slightly open.</p>
+  <button class="btn primary" onclick="show('check')">Stop and check</button>`};},
+quality(){ return {title:"Check your clip", html:`
+  ${alertStrip()}
+  <span class="tag ai">AI check</span>
+  <h2>The video is too dark to use</h2>
+  <p>The sound is clear, so we can work from the sound alone. Answers from sound are less certain.</p>
+  <button class="btn primary" onclick="st.usedSound=true; show('check')">Use the sound</button>
+  <button class="btn" onclick="show('capture')">Try filming again</button>
+  <button class="btn ghost" onclick="show('report')">Skip, just report to 112</button>`};},
+check(){ setTimeout(()=>{ if(cur==="check") show("result"); }, 2600); const off=S().offline; return {title:"Checking", html:`
+  <ul class="steps">
+   <li><span class="s ${off?'':'done'}">${off?'!':'✓'}</span> ${off?'Official alerts: no signal, using the last check (18:02)':'Official alerts checked first: none for your area'}</li>
+   <li><span class="s done">✓</span> Comparing ${st.usedSound?'the sound':'the clip'} with 140 known types, on this phone</li>
+   <li><span class="s">3</span> Writing the answer</li></ul>
+  <p class="small">An official alert always comes before the AI’s guess.</p>
+  <button class="btn ghost" onclick="show('result')">Skip the wait (demo)</button>`};},
+result(){ const r=R(); return {title:"What it could be", html:`
+  ${alertStrip()}
+  ${r.armed ? `<div class="card red" role="alert"><span class="tag red">Safety first</span>
+     <h2 style="color:var(--red);margin-top:8px">Go inside now</h2>
+     <p>One of the possible types can carry explosives. Don’t go closer. Keep children inside, away from windows.</p>
+     <button class="btn danger" onclick="st.inside=true; show('report')">I’m inside → report to 112</button></div>` : ""}
+  <span class="tag ai">AI guess · can be wrong</span>${st.usedSound?' <span class="tag you">from sound only</span>':''}
+  <h2>${r.head}</h2>
+  <div class="card">${r.cands.map(c=>`<div class="cand"><div><div class="name">${c[0]}</div>${c[2]?'<div class="armed">can be armed</div>':''}</div><span class="word ${wcls(c[1])}">${c[1]}</span></div>`).join("")}</div>
+  ${!r.armed ? `<p class="small"><b>This is not an all-clear.</b> None of these types is known to be armed, but a phone can’t see what a drone carries. If you feel unsafe, go inside.</p>`:""}
+  <div class="row"><button class="btn ghost" onclick="openSheet('why')">Why?</button><button class="btn ghost" onclick="openSheet('words')">How sure?</button></div>
+  ${r.armed ? `<button class="btn primary" onclick="show('report')">Report to 112</button>` : ""}
+  <div class="row"><button class="btn ghost" onclick="st.feedback='ok'; show('done')">Looks right</button><button class="btn ghost" onclick="show('notit')">Not what I saw</button></div>
+  ${!r.armed ? `<button class="btn" onclick="show('report')">Report to 112 anyway</button><p class="small">Flown low over a school or people? That is still worth reporting. 112 is for real need, so the app never calls for you.</p>` : ""}`};},
+notit(){ const on=t=>st.notes.includes(t)?"on":""; return {title:"Help the app", html:`
+  <span class="tag you">You</span>
+  <h2>What was different?</h2>
+  <p class="small">Your notes change the ranking. They don’t retrain anything on your phone.</p>
+  <div class="chips">${["No sound","Drifting with the wind","Bigger than a car","Had lights","Lights were off","Very fast","Wings, not rotors"].map(t=>`<span class="chip ${on(t)}" onclick="toggleNote('${t}')">${t}</span>`).join("")}</div>
+  <h3>Or pick one yourself</h3>
+  <div class="chips"><span class="chip" onclick="st.correction='balloon'; show('result')">Smuggling balloon</span><span class="chip" onclick="show('report')">None of these: just report</span></div>
+  <button class="btn primary" ${st.notes.length?'':'disabled'} onclick="st.correction='balloon'; show('result')">Update the answer</button>`};},
+report(){ const r=R(); const top=r.cands.filter(c=>c[1]!=="Unlikely").map(c=>c[0]+" ("+c[1].toLowerCase()+")").join(", ");
+  const dirs=["N","NE","E","SE","S","SW","W","NW"];
+  return {title:"Report to 112", html:`
+  <p class="small">Check this before you call. You decide what is said. Nothing is sent until you call.</p>
+  <div class="field"><div class="k">When <span class="tag you">auto</span></div><div class="v">Today 19:31, for about 1 minute</div></div>
+  <div class="field">${editBtn("where")}<div class="k">Where <span class="tag you">${st.where?"you":"auto"}</span></div>${fieldV("where", DEF.where)}</div>
+  <div class="field"><div class="k">Moving towards <span class="tag you">you</span></div>
+    <div class="compass">${dirs.map(d=>`<span class="chip ${st.dir===d?'on':''}" onclick="st.dir='${d}';render()">${d}</span>`).join("")}</div></div>
+  <div class="field">${editBtn("noticed")}<div class="k">What you noticed <span class="tag you">you</span></div>${fieldV("noticed", st.usedSound?'Loud buzzing, could not see it clearly':'Small dark object, buzzing, low over the school yard')}</div>
+  <div class="field"><div class="k"><span class="tag ai">AI guess</span> include in the call?</div>
+    <div class="v">${S().result==="unsure"&&st.correction!=="balloon"?"Can’t tell. Possible: ":""}${top}</div>
+    <label class="small"><input type="checkbox" ${st.include?'checked':''} onchange="st.include=this.checked"> Say it as “an app’s guess”, not a fact</label></div>
+  <div class="card blue small"><b>Don’t post the video online.</b> It can help an attacker (LT72). It stays on your phone; 112 can ask for it.</div>
+  <button class="btn danger" onclick="show('calling')">Call 112</button>
+  <button class="btn ghost" onclick="show('done')">Don’t call. Keep it private</button>`};},
+calling(){ const r=R(); return {title:"Calling 112…", html:`
+  <div class="strip" style="background:#222;color:#fff">📞 112 · 00:14</div>
+  <h3>Read this to the operator</h3>
+  <div class="card" style="font-size:17px;line-height:1.5">
+   “I saw ${st.noticed ? esc((st.noticed.charAt(0).toLowerCase()+st.noticed.slice(1)).replace(/[.]$/,"")) : (st.usedSound?'something buzzing I couldn’t see clearly':'a small dark flying object')} at about 19:31 ${st.where ? "— location: " + esc(st.where.replace(/[.]$/,"")) : "near Mokyklos street in Pabradė"}. It was moving ${({N:'north',NE:'north-east',E:'east',SE:'south-east',S:'south',SW:'south-west',W:'west',NW:'north-west'})[st.dir]}.
+   ${st.include?` An app guessed: ${r.word==="Can’t tell"?"can’t tell":r.cands[0][0].toLowerCase()+", "+r.word.toLowerCase()}.`:''}
+   I have a ${st.usedSound?'sound recording':'short video'} if you need it.”</div>
+  <p class="small">Answer the operator’s questions first. They lead the call.</p>
+  <button class="btn primary" onclick="show('done')">Call ended</button>`};},
+done(){ return {title:"Saved", html:`
+  ${alertStrip()}
+  <h2>${st.feedback==='ok'?'Thanks, noted':'Saved on your phone'}</h2>
+  <p>We’ll tell you if officials confirm what it was. Your clip is not shared.</p>
+  ${R().armed && !st.inside ? `<div class="card red">Still outside? Go inside. A possible type can be armed.</div>`:""}
+  <button class="btn primary" onclick="show('followup')">Next day: open the notification (demo)</button>
+  <button class="btn ghost" onclick="restart()">Back to start</button>`};},
+followup(){ const res=S().result; const wrong = res==="wrong" && st.correction!=="balloon";
+  const said = st.correction==="balloon" ? "possibly a smuggling balloon (after your notes)" : res==="civil"||res==="wrong" ? "small camera drone, likely" : "can’t tell";
+  const truth = res==="civil" ? "a hobby drone flown without permission" : "a smuggling balloon";
+  return {title:"Follow-up", html:`
+  <div class="notif"><b>SkyCheck</b> · today 10:12<br>Officials have confirmed what flew over Pabradė yesterday.</div>
+  <span class="tag off">Official</span> <span class="small">Police statement, 08:40 (source link)</span>
+  <h2>It was ${truth}</h2>
+  <div class="card ${wrong?'amber':''}"><span class="tag ai">Our guess</span> ${said}
+   ${wrong?`<p><b>We got this wrong.</b> The clip was short and wind covered the sound, so a drifting balloon looked like a hovering drone. We should have said “Possible”, not “Likely”.</p>
+   <p class="small">This case goes to the team that checks the model. Nothing about you is sent.</p>`:
+   `<p class="small">${res==="civil"?"Our guess matched.":"“Can’t tell” was the honest answer; your report helped."}</p>`}</div>
+  <h3>Was the app helpful last night?</h3>
+  <div class="row"><button class="btn ghost" onclick="restart()">Yes</button><button class="btn ghost" onclick="restart()">No</button></div>`};}
+};
+VIEWS.calldirect = () => ({title:"Calling 112…", html:`<div class="strip" style="background:#222;color:#fff">📞 112 · 00:03</div><p>Answer the operator’s questions. Say where you are and what happened.</p><button class="btn primary" onclick="restart()">Call ended</button>`});
+function call112direct(){ show("calldirect"); }
+function toggleNote(t){ const i=st.notes.indexOf(t); i<0?st.notes.push(t):st.notes.splice(i,1); render(); }
+
+const SHEETS = {
+why(){ const r=R(); return `<span class="tag ai">Why the AI thinks this</span><h3>What it noticed</h3><ul>${r.why.map(w=>`<li>${w}</li>`).join("")}</ul>
+  <h3>What it can’t know</h3><ul><li>What the object carries, or who flies it</li><li>Where it came from: a video alone can’t prove origin</li><li>Types it was never shown (new designs, decoys)</li></ul>
+  <p class="small">Reference types last updated 2026-10-30.</p><button class="btn" onclick="closeSheet()">Close</button>`;},
+words(){ return `<h3>How sure is “Likely”?</h3>
+  <div class="cand"><span class="word w-likely">Likely</span><span class="small">Usually right for clips like this (target: 8 in 10)</span></div>
+  <div class="cand"><span class="word w-possible">Possible</span><span class="small">Fits what we saw, but so do other types</span></div>
+  <div class="cand"><span class="word w-unlikely">Unlikely</span><span class="small">Shown so you know we checked it</span></div>
+  <div class="cand"><b>Can’t tell</b><span class="small">The clip doesn’t hold enough to decide</span></div>
+  <p class="small">We use words, not percentages. If any possible type can be armed, the safety card always comes first, whatever the AI’s top guess.</p>
+  <button class="btn" onclick="closeSheet()">Close</button>`;}
+};
+function openSheet(k){ $("sheet").innerHTML=SHEETS[k](); $("sheet").classList.add("show"); $("shade").classList.add("show"); }
+function closeSheet(){ $("sheet").classList.remove("show"); $("shade").classList.remove("show"); }
+
+function render(){
+  const v=VIEWS[cur]();
+  $("title").textContent=v.title; $("screen").innerHTML=v.html; $("screen").scrollTop=0;
+  $("back").style.visibility = (v.back===false||!hist.length)?"hidden":"visible";
+  $("sig").textContent = S().offline ? "▂ no data" : "▂▄▆ 4G";
+  $("clock").textContent = cur==="followup" ? "10:12" : "19:31";
+  $("sid").textContent = sc+" · "+cur;
+}
+// Deep links for screenshots: #sc=B&s=result&sheet=why&st={...}
+function fromHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  if(p.get("phone")) document.body.classList.add("phoneonly");
+  if(p.get("sc")) sc=p.get("sc");
+  reset(); if(p.get("st")) Object.assign(st, JSON.parse(p.get("st")));
+  cur=p.get("s")||"home"; hist = cur==="home"?[]:["home"]; drawScen(); render();
+  if(p.get("sheet")) openSheet(p.get("sheet"));
+}
+fromHash();
+</script>
+</body>
+</html>
