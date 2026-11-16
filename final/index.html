@@ -779,6 +779,8 @@ function fromHash(){
   fit();
 }
 fromHash();
+// A pasted deep link in an open tab only changes the hash; reload so it shows. Bare "#" links are ignored.
+addEventListener("hashchange", ()=>{ if(/(^|[#&])(mode|sc|s)=/.test(location.hash)) location.reload(); });
 </script>
 </body>
 </html>
