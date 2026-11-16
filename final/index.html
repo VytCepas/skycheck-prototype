@@ -5,150 +5,287 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SkyCheck final prototype</title>
 <style>
+/* Tokens: src/DESIGN.md. Type scale 13 / 16 / 20 / 25 / 31, weights 400 + 700, 8-px grid. */
 :root{
-  --ink:#1d1d1f; --muted:#5f6368; --line:#d0d3d8; --bg:#eef0f3; --card:#ffffff;
-  --soft:#f4f5f7; --red:#c62828; --redbg:#fdecea; --amber:#8a4b00; --amberbg:#fff4e0; --amberline:#e0a345;
-  --blue:#1f5fa8; --bluebg:#e8f0fb; --green:#2e6b3a; --greenbg:#e7f3ea;
+  --ink:#0F172A; --muted:#475569; --line:#E2E8F0; --paper:#F8F7F4; --card:#FFFFFF;
+  --red:#DC2626; --redbg:#FEF2F2; --amber:#B45309; --amberbg:#FFF7E6; --amberline:#F59E0B;
+  --blue:#1D4ED8; --bluebg:#EFF6FF; --green:#15803D; --greenbg:#F0FDF4;
+  --edge:#CBD5E1;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.wrap{display:flex;gap:28px;justify-content:center;align-items:flex-start;padding:24px 16px;flex-wrap:wrap}
-.panel{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
-.panel h1{font-size:17px;margin:0 0 4px}
-.panel p{margin:6px 0;color:var(--muted);font-size:13px}
-.panel label{display:block;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:14px}
-.panel label:hover{background:var(--soft)}
-.panel .legend{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12px;color:var(--muted)}
-.modes{display:flex;gap:4px;margin:10px 0;background:var(--soft);padding:4px;border-radius:10px}
-.modes button{flex:1;border:0;background:none;padding:7px 4px;border-radius:8px;font:600 12px/1.2 inherit;cursor:pointer;color:var(--muted)}
-.modes button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
-.truth{margin-top:10px;border:1px dashed var(--line);border-radius:10px;padding:10px;font-size:13px}
-.truth .cell{display:inline-block;font-weight:700;font-size:12px;padding:2px 8px;border-radius:6px;margin-right:6px}
-.c-TP{background:#e7f3ea;color:#2e6b3a}.c-TN{background:#e8f0fb;color:#1f5fa8}.c-FP{background:#fff4e0;color:#8a4b00}.c-FN{background:#fdecea;color:#c62828}.c-OFF{background:#eee;color:#444}
-.phone{width:390px;height:800px;background:#fff;border:10px solid #222;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;position:relative}
-.status{height:26px;font-size:12px;display:flex;justify-content:space-between;padding:5px 18px 0;color:#444}
-.top{display:flex;align-items:center;gap:10px;padding:6px 16px 10px;border-bottom:1px solid var(--line)}
-.top b{font-size:17px}
-.top .back{border:0;background:none;font-size:22px;cursor:pointer;padding:0 6px 0 0;color:var(--ink)}
-.top .mode{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
-.screen{flex:1;overflow:auto;padding:14px 16px 20px}
-.strip{display:flex;gap:8px;align-items:center;font-size:13px;padding:8px 10px;border-radius:10px;margin-bottom:12px}
-.strip.ok{background:var(--greenbg);color:var(--green)}
-.strip.warn{background:var(--amberbg);color:var(--amber)}
-.strip.alert{background:var(--red);color:#fff;font-weight:600}
-.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:400 16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+b,strong,h1,h2,h3,th{font-weight:700}
+h1,h2,h3,p,ul,figure{margin:0}
+button,input,textarea{font:inherit;color:inherit}
+a{color:var(--blue);font-weight:700;text-underline-offset:3px}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- demo page ---------- */
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:32px;align-items:start;padding:24px;max-width:1440px;margin:0 auto}
+.side{width:100%;max-width:340px;display:flex;flex-direction:column;gap:16px}
+.side.left{justify-self:end}
+.side.right{justify-self:start}
+.stage{display:flex;justify-content:center}
+.brand{font-size:25px;line-height:1.2;letter-spacing:-.01em}
+.brand-sub{color:var(--muted);margin-top:4px}
+.modes{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--line);padding:4px;border-radius:12px}
+.modes button{border:0;background:none;min-height:56px;padding:8px 4px;border-radius:8px;cursor:pointer;color:var(--muted);font-weight:700;font-size:16px;line-height:1.2}
+.modes button span{display:block;font-weight:400;font-size:13px}
+.modes button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.12)}
+#scenarios{display:flex;flex-direction:column;gap:4px}
+#scenarios .hint{font-size:16px;color:var(--muted)}
+.scn{position:relative;display:flex;gap:12px;align-items:center;min-height:48px;padding:8px 12px;border-radius:12px;cursor:pointer;line-height:1.3;border:2px solid transparent}
+.scn:hover{background:var(--card)}
+.scn input{position:absolute;opacity:0;pointer-events:none}
+.scn .k{flex:none;min-width:32px;height:32px;padding:0 6px;border-radius:999px;background:var(--card);border:1px solid var(--edge);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px}
+.scn.on{background:var(--card);border-color:var(--ink);font-weight:700}
+.scn.on .k{background:var(--ink);color:#fff;border-color:var(--ink)}
+.scn:has(input:focus-visible){outline:3px solid var(--blue)}
+.now{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.now .lbl,.truth .lbl,.legend .lbl{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.now .t{font-size:20px;font-weight:700;line-height:1.3;margin-top:4px}
+.now .s{color:var(--muted);margin-top:4px}
+.truth{border:2px dashed var(--edge);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.truth .cell{align-self:flex-start;font-weight:700;font-size:13px;padding:4px 10px;border-radius:999px;border:1.5px solid var(--ink)}
+.legend{display:flex;flex-direction:column;gap:8px}
+.legend .r{display:flex;gap:8px;align-items:center}
+.legend .sw{flex:none;width:16px;height:16px;border-radius:4px}
+.restart{margin-top:8px}
+.screen-id{display:none}
+
+/* ---------- phone ---------- */
+.phone{width:410px;height:820px;background:var(--paper);border:10px solid var(--ink);border-radius:44px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{flex:none;height:32px;display:flex;justify-content:space-between;align-items:center;padding:0 24px;font-size:13px;font-weight:700;background:var(--card)}
+.status #sig{display:flex;align-items:center;gap:4px}
+.bars{display:inline-flex;align-items:flex-end;gap:2px;height:11px}
+.bars i{display:block;width:3px;background:var(--ink);border-radius:1px}
+.bars i.off{background:var(--edge)}
+.top{flex:none;display:flex;align-items:center;gap:4px;min-height:56px;padding:0 16px 0 4px;background:var(--card);border-bottom:1px solid var(--line)}
+.top .back{width:44px;height:44px;border:0;background:none;font-size:32px;line-height:1;cursor:pointer;border-radius:999px;display:flex;align-items:center;justify-content:center;padding-bottom:4px}
+.top b{font-size:20px;line-height:1.2}
+.top .mode{margin-left:auto;font-size:13px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.screen{flex:1;overflow:auto;padding:12px 16px 24px;display:flex;flex-direction:column;gap:12px}
+.screen > *{flex:none}
+.stack{display:flex;flex-direction:column;gap:8px}
+.actions{position:sticky;bottom:-24px;margin:0 -16px -24px;padding:12px 16px 12px;background:var(--paper);border-top:1px solid var(--line);gap:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+
+/* type */
+.hl{font-size:25px;line-height:1.2;letter-spacing:-.01em}
+h3{font-size:20px;line-height:1.3}
+.muted{color:var(--muted)}
+.cap{font-size:13px;color:var(--muted)}
+.foot{color:var(--muted)}
+
+/* tags, strips */
+.tags{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tag{display:inline-flex;align-items:center;font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:999px;line-height:1.2;white-space:nowrap}
 .tag.ai{background:var(--bluebg);color:var(--blue)}
-.tag.off{background:var(--greenbg);color:var(--green)}
-.tag.you{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
-.tag.red{background:var(--red);color:#fff}
+.tag.off{background:var(--greenbg);color:var(--green);border:1px solid #BBF7D0}
+.tag.you{background:var(--card);color:var(--muted);border:1px solid var(--edge)}
 .tag.amb{background:var(--amber);color:#fff}
-h2{font-size:21px;margin:6px 0 8px;line-height:1.25}
-h3{font-size:15px;margin:14px 0 6px}
-.small{font-size:13px;color:var(--muted)}
-.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
-.card.red{border:2px solid var(--red);background:var(--redbg)}
-.card.amber{border:2px solid var(--amberline);background:var(--amberbg)}
-.card.blue{border:1px solid #b9cdea;background:var(--bluebg)}
-.card.soft{background:var(--soft);border-color:var(--soft)}
-.btn{display:block;width:100%;border:1px solid var(--ink);background:#fff;color:var(--ink);font-size:16px;font-weight:600;padding:13px;border-radius:12px;margin:8px 0;cursor:pointer;text-align:center}
-.btn.primary{background:var(--ink);color:#fff}
-.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.strip{display:flex;gap:8px;align-items:center;padding:6px 12px;border-radius:12px;min-height:44px}
+.strip.ok{background:var(--greenbg);color:var(--green);border:1px solid #BBF7D0}
+.strip.warn{background:var(--amberbg);color:var(--amber);border:2px solid var(--amberline)}
+.strip.alert{background:var(--red);color:#fff;flex-direction:column;align-items:flex-start;gap:0;padding:8px 16px}
+.strip.alert b{font-size:20px;line-height:1.3}
+.strip.call{background:var(--ink);color:#fff;font-weight:700}
+
+/* cards */
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.card.red{background:var(--redbg);border:2px solid var(--red)}
+.card.red .hl{color:var(--red)}
+.card.amber{background:var(--amberbg);border:2px solid var(--amberline)}
+.card.amber .hl{color:var(--amber)}
+.card.quiet{background:transparent;border:1px solid var(--edge)}
+.card .btn{margin-top:4px}
+.superseded{opacity:.8}
+.divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-weight:700;font-size:13px;letter-spacing:.05em;text-transform:uppercase}
+.divider::after{content:"";flex:1;height:1px;background:var(--edge)}
+
+/* buttons */
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;padding:12px 16px;border-radius:12px;border:1.5px solid var(--edge);background:var(--card);color:var(--ink);font-size:16px;font-weight:700;line-height:1.25;cursor:pointer;text-align:center}
+.btn.primary{background:var(--ink);border-color:var(--ink);color:#fff}
+.btn.big{min-height:64px;font-size:20px}
 .btn.amber{background:var(--amber);border-color:var(--amber);color:#fff}
-.btn.ghost{border-color:var(--line);font-weight:500}
-.btn:disabled{opacity:.35;cursor:not-allowed}
-.row{display:flex;gap:8px}.row .btn{margin:6px 0}
-.cand{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:9px 0;gap:8px}
-.cand:first-of-type{border-top:0}
-.cand .name{font-weight:600}
-.word{font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.link{background:none;border-color:transparent;color:var(--blue);min-height:44px;padding:8px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.chip:focus-visible,.back:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.inline{display:inline-flex;align-items:center;min-height:44px;border:0;background:none;padding:0;color:var(--blue);font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+
+/* AI guess */
+.cands{display:flex;flex-direction:column}
+.cand{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;padding:6px 0;border-top:1px solid var(--line)}
+.cands .cand:first-child{border-top:0}
+.cand .name{font-weight:700;line-height:1.3}
+.armed{display:block;font-size:13px;font-weight:700;color:var(--amber);margin-top:2px}
+.word{font-size:13px;font-weight:700;padding:4px 12px;border-radius:999px;white-space:nowrap;border:1.5px solid transparent}
 .w-likely{background:var(--ink);color:#fff}
-.w-possible{background:#fff;border:1.5px solid var(--ink)}
-.w-unlikely{background:var(--soft);color:var(--muted)}
-.armed{color:var(--amber);font-size:12px;font-weight:700}
-ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
-.viewfinder{height:300px;border-radius:14px;background:linear-gradient(#2b3440,#11161c);position:relative;display:flex;align-items:center;justify-content:center;color:#cfd6df;font-size:13px;text-align:center;padding:20px}
-.viewfinder .dot{width:10px;height:6px;background:#000;border-radius:3px;position:absolute;top:110px;left:220px;box-shadow:0 0 0 1px #556}
-.rec{position:absolute;top:12px;left:12px;background:var(--red);color:#fff;font-size:12px;padding:3px 8px;border-radius:6px}
-.wave{display:flex;gap:3px;align-items:center;height:60px;justify-content:center;margin:10px 0}
-.wave i{display:block;width:5px;background:var(--ink);border-radius:3px}
-.steps{list-style:none;padding:0;margin:8px 0}
-.steps li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:14px}
-.steps .s{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:12px}
-.steps .s.done{background:var(--green);border-color:var(--green);color:#fff}
+.w-possible{background:var(--card);border-color:var(--ink)}
+.w-unlikely{background:var(--paper);color:var(--muted);border-color:var(--line)}
+.w-cant{background:var(--card);color:var(--ink);border:1.5px dashed var(--muted)}
+.explain{display:grid;grid-template-columns:1fr 1fr;gap:8px;border-top:1px solid var(--line);padding-top:8px;margin-top:0}
+.notclear{border-top:1px solid var(--line);padding-top:12px}
+.undo{display:flex;flex-direction:column;gap:8px;background:var(--paper);border-radius:12px;padding:12px 16px}
+
+/* capture */
+.viewfinder{height:300px;border-radius:12px;background:#1E293B;position:relative;color:#F1F5F9;overflow:hidden}
+.viewfinder .dot{width:12px;height:7px;background:#020617;border-radius:3px;position:absolute;top:104px;left:216px;box-shadow:0 0 0 1px #64748B}
+.viewfinder .frame{position:absolute;top:72px;left:184px;width:76px;height:64px;border:2px solid rgba(241,245,249,.7);border-radius:8px}
+.rec{position:absolute;top:12px;left:12px;background:rgba(2,6,23,.6);color:#fff;font-size:13px;font-weight:700;padding:4px 10px;border-radius:999px}
+.vf-hint{position:absolute;left:0;right:0;bottom:0;padding:16px;background:rgba(2,6,23,.55);font-size:16px;line-height:1.4}
+.map{height:176px;border-radius:12px;background:#E8ECE4;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.wave{display:flex;gap:4px;align-items:center;height:96px;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.wave i{display:block;width:4px;background:var(--ink);border-radius:2px}
+.steps{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:0;background:var(--card);border:1px solid var(--line);border-radius:12px}
+.steps li{display:flex;gap:12px;align-items:center;min-height:56px;padding:8px 16px;border-top:1px solid var(--line);line-height:1.35}
+.steps li:first-child{border-top:0}
+.steps .s{width:28px;height:28px;border-radius:999px;border:2px solid var(--edge);flex:none;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--muted)}
+.steps .s.done{background:var(--ink);border-color:var(--ink);color:#fff}
 .steps .s.flag{background:var(--amber);border-color:var(--amber);color:#fff}
-.field{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:7px 0}
-.field .k{font-size:12px;color:var(--muted)}
-.field .v{font-size:15px}
-.field .edit{float:right;font-size:13px;color:var(--blue);cursor:pointer;border:0;background:none}
-.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
-.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:13px;cursor:pointer;background:#fff}
-.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
-.compass{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0}
-.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top-left-radius:18px;border-top-right-radius:18px;box-shadow:0 -6px 30px rgba(0,0,0,.25);padding:16px;max-height:78%;overflow:auto;display:none}
-.sheet.show{display:block}
-.shade{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none}
+.steps li.pending{color:var(--muted)}
+ul.list{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+/* forms */
+.group{background:var(--card);border:1px solid var(--line);border-radius:12px}
+.field{padding:12px 16px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.group .field:first-child{border-top:0}
+.field .k{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--muted);min-height:28px}
+.field .v{font-size:16px}
+.field .edit{margin-left:auto;min-height:44px;margin-top:-8px;margin-bottom:-8px;padding:0 4px 0 16px;color:var(--blue);font-weight:700;font-size:16px;cursor:pointer;border:0;background:none}
+.field textarea{width:100%;padding:8px 12px;border:1.5px solid var(--edge);border-radius:8px;resize:vertical}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;justify-content:center;min-height:44px;border:1.5px solid var(--edge);border-radius:999px;padding:8px 16px;font-size:16px;cursor:pointer;background:var(--card);line-height:1.2}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:700}
+.compass{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.check{display:flex;gap:12px;align-items:center;min-height:44px;cursor:pointer}
+.check input{width:22px;height:22px;accent-color:var(--ink);flex:none;margin:0}
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:16px;min-height:56px;padding:8px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;cursor:pointer}
+.toggle input{width:22px;height:22px;accent-color:var(--ink);flex:none;margin:0}
+
+/* sheets */
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--card);border-top-left-radius:20px;border-top-right-radius:20px;padding:8px 16px 24px;max-height:86%;overflow:auto;display:none;flex-direction:column;gap:16px}
+.sheet::before{content:"";display:block;flex:none;width:40px;height:4px;border-radius:999px;background:var(--edge);margin:0 auto}
+.sheet.show{display:flex}
+.sheet > *{flex:none}
+.sheet .sec{display:flex;flex-direction:column;gap:8px}
+.sheet .wl{display:flex;flex-direction:column}
+.sheet .wl .cand{justify-content:flex-start;align-items:flex-start;gap:16px}
+.sheet .wl .word{flex:none;min-width:96px;text-align:center}
+.shade{position:absolute;inset:0;background:rgba(15,23,42,.45);display:none}
 .shade.show{display:block}
-.notif{border-radius:14px;background:#f1f1f3;padding:12px;margin:10px 0;border:1px solid var(--line)}
-.screen-id{position:absolute;bottom:4px;right:12px;font-size:10px;color:#aaa}
-.sil{display:flex;gap:8px;align-items:center;margin:6px 0}
-.sil figure{margin:0;text-align:center;font-size:11px;color:var(--muted);flex:1}
-.sil svg{width:100%;height:64px;background:#f6f7f9;border-radius:8px}
-.pro{font-size:13px;margin:2px 0}.pro b{color:var(--green)}.con{font-size:13px;margin:2px 0}.con b{color:var(--red)}
-.ecard{border:2px solid var(--ink);border-radius:12px;padding:12px;font-size:13px}
-.ecard .hd{font-weight:800;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px}
-.toggle{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:6px 0}
-/* team view */
-.team{width:760px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;display:none}
-.team h2{margin-top:0}
-.vm{display:grid;grid-template-columns:120px 1fr 1fr;gap:6px;margin:8px 0 14px}
-.vm div{border-radius:10px;padding:10px;font-size:13px}
-.vm .hd{background:var(--soft);font-weight:700}
-.vm .cellbox{cursor:pointer;border:1px solid var(--line)}
-.vm .cellbox:hover{outline:2px solid var(--ink)}
-.vm .w{font-size:20px;font-weight:800;float:right}
-.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
-.meter div{background:var(--soft);border-radius:10px;padding:10px;text-align:center}
-.meter b{display:block;font-size:22px}
-.meter span{font-size:12px;color:var(--muted)}
-.bad{color:var(--red)}.good{color:var(--green)}
-table.th{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
-table.th td,table.th th{border-top:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
-input[type=range]{width:100%}
-.mode-team .phone{display:none}.mode-team .team{display:block}
-.phoneonly .panel{display:none}.phoneonly .wrap{padding:0;justify-content:flex-start}.phoneonly .screen-id{display:none}
-.phoneonly .phone{border:0;border-radius:0}
-@media (max-width:760px){.panel{width:100%;max-width:390px}.vm{grid-template-columns:90px 1fr 1fr}.meter{grid-template-columns:repeat(2,1fr)}}
+
+/* follow-up, verify */
+.notif{border-radius:16px;background:var(--card);padding:12px 16px;border:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.notif .nh{display:flex;justify-content:space-between;font-size:13px;color:var(--muted)}
+.notif .nh b{color:var(--ink)}
+.said{font-size:20px;font-weight:700;line-height:1.3}
+.file{display:flex;gap:12px;align-items:center}
+.file .ic{flex:none;width:48px;height:48px;border-radius:12px;background:var(--ink);color:#fff;display:flex;align-items:center;justify-content:center}
+.file .ic svg.i{width:24px;height:24px}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 16px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;font-weight:700}
+.sil{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sil figure{text-align:center;font-size:13px;color:var(--muted)}
+.sil svg{display:block;width:100%;height:72px;background:var(--paper);border-radius:8px}
+.fa{display:grid;grid-template-columns:80px 1fr;gap:8px;line-height:1.4}
+.ecard{background:var(--card);border:2px solid var(--ink);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.ecard .hd{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;border-bottom:1px solid var(--line);padding-bottom:8px}
+.ecard .hd span{display:block;color:var(--muted);letter-spacing:0;text-transform:none;font-size:16px}
+.ecard .l{display:grid;grid-template-columns:112px 1fr;gap:8px;line-height:1.4}
+.ecard .l b{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+.script{font-size:20px;line-height:1.5}
+.warnline{color:var(--amber);font-weight:700}
+
+/* ---------- team view ---------- */
+.team{width:860px;max-width:100%;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:32px;display:none;flex-direction:column;gap:24px}
+.team .lead{color:var(--muted);margin-top:8px}
+.vm{display:grid;grid-template-columns:150px 1fr 1fr;gap:8px}
+.vm > div{border-radius:12px;padding:12px 16px}
+.vm .hd{font-weight:700;display:flex;align-items:center;gap:8px;line-height:1.3}
+.vm .hd .sw{flex:none;width:14px;height:14px;border-radius:4px}
+.vm .cellbox{cursor:pointer;border:1.5px solid var(--edge);background:var(--card);display:flex;flex-direction:column;gap:4px}
+.vm .cellbox:hover{border-color:var(--ink)}
+.vm .cellbox .top2{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.vm .cellbox .w{font-size:31px;font-weight:700;line-height:1}
+.vm .cellbox .go{color:var(--blue);font-weight:700;margin-top:4px}
+.thr{display:flex;align-items:baseline;justify-content:space-between;gap:16px}
+.thr b{font-size:31px;line-height:1}
+input[type=range]{width:100%;height:44px;accent-color:var(--ink);margin:0;cursor:pointer}
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.meter div{background:var(--paper);border-radius:12px;padding:16px;text-align:center}
+.meter b{display:block;font-size:31px;line-height:1.1}
+.meter span{font-size:13px;color:var(--muted)}
+.bad{color:var(--amber)}.good{color:var(--green)}
+.team p{max-width:72ch}
+table.th{border-collapse:collapse;width:100%;font-size:16px}
+table.th td,table.th th{border-top:1px solid var(--line);padding:8px 8px 8px 0;text-align:left;vertical-align:top;line-height:1.4}
+table.th th{font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+table.th td:nth-child(2){font-weight:700;white-space:nowrap}
+
+/* ---------- modes ---------- */
+.mode-team .stage .phone{display:none}
+.mode-team .team{display:flex}
+.mode-team .stage{width:100%}
+.mode-team .wrap{display:flex;flex-direction:column;align-items:center;gap:24px}
+.mode-team .side.left{max-width:860px;justify-self:auto;display:grid;grid-template-columns:auto 1fr;gap:8px 32px;align-items:center}
+.mode-team .side.left .brandbox{grid-row:span 2}
+.mode-team .side.right,.mode-team .restart{display:none}
+.phoneonly .side{display:none}
+.phoneonly .wrap{display:block;padding:0;margin:0;max-width:none}
+.phoneonly .stage{justify-content:flex-start}
+.phoneonly .phone{width:390px;height:800px;border:0;border-radius:0}
+@media (max-width:980px){
+  .wrap{display:flex;flex-direction:column;align-items:center}
+  .side{max-width:410px}
+  .mode-team .side.left{display:flex}
+  .vm{grid-template-columns:110px 1fr 1fr}
+  .meter{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:430px){ .phone{width:100%;border-width:0;border-radius:0} .team{padding:16px} }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="panel" aria-label="Demo controls">
-    <h1>SkyCheck · final prototype (HW5)</h1>
-    <p>Mid-fidelity and clickable. The AI answers are scripted (no model runs). Each scenario is one cell of our value matrix.</p>
+  <aside class="side left" aria-label="Demo controls">
+    <div class="brandbox">
+      <h1 class="brand">SkyCheck</h1>
+      <p class="brand-sub">Final prototype · HW5. The AI answers are scripted.</p>
+    </div>
     <div class="modes" role="tablist">
-      <button id="m-civ" onclick="pickMode('civ')">Quick check<br><span style="font-weight:400">Rūta</span></button>
-      <button id="m-ver" onclick="pickMode('ver')">Verify<br><span style="font-weight:400">Tomas</span></button>
-      <button id="m-team" onclick="pickMode('team')">Team view<br><span style="font-weight:400">matrix</span></button>
+      <button id="m-civ" onclick="pickMode('civ')">Quick check<span>Rūta</span></button>
+      <button id="m-ver" onclick="pickMode('ver')">Verify<span>Tomas</span></button>
+      <button id="m-team" onclick="pickMode('team')">Team view<span>matrix</span></button>
     </div>
     <div id="scenarios"></div>
-    <button class="btn ghost" onclick="restart()">Restart scenario</button>
+    <button class="btn restart" onclick="restart()">Restart scenario</button>
+  </aside>
+  <div class="stage">
+    <div class="phone" aria-label="Phone screen">
+      <div class="status"><span id="clock">19:31</span><span id="sig"></span></div>
+      <div class="top"><button class="back" id="back" onclick="goBack()" aria-label="Back">‹</button><b id="title">SkyCheck</b><span class="mode" id="modelabel"></span></div>
+      <div class="screen" id="screen"></div>
+      <div class="shade" id="shade" onclick="closeSheet()"></div>
+      <div class="sheet" id="sheet" role="dialog"></div>
+    </div>
+    <div class="team" id="team" aria-label="Team view"></div>
+  </div>
+  <aside class="side right" aria-label="Demo notes">
+    <div class="now"><div class="lbl">Now showing</div><div class="t" id="nowt"></div><div class="s" id="sid"></div></div>
     <div class="truth" id="truth"></div>
     <div class="legend">
-      <div><span class="tag off">Official</span> from LT72 / 112 / police, never from the AI</div>
-      <div style="margin-top:6px"><span class="tag ai">AI guess</span> made by the model, can be wrong</div>
-      <div style="margin-top:6px"><span class="tag you">You</span> entered or confirmed by the user</div>
-      <p>Words, not scores: <b>Likely</b> / <b>Possible</b> / <b>Unlikely</b> / <b>Can’t tell</b>. Red = official alert only; amber = AI caution.</p>
+      <div class="lbl">How to read the screen</div>
+      <div class="r"><span class="tag off">Official</span><span>LT72, 112 or police. Never the AI.</span></div>
+      <div class="r"><span class="tag ai">AI guess</span><span>From the model. Can be wrong.</span></div>
+      <div class="r"><span class="tag you">You</span><span>Entered by the user.</span></div>
+      <div class="r"><span class="sw" style="background:var(--red)"></span><span>Red: official alert only</span></div>
+      <div class="r"><span class="sw" style="background:var(--amberline)"></span><span>Amber: AI caution, not confirmed</span></div>
+      <div class="muted">Words, not scores: <b>Likely</b> · <b>Possible</b> · <b>Unlikely</b> · <b>Can’t tell</b></div>
     </div>
-  </div>
-  <div class="phone" aria-label="Phone screen">
-    <div class="status"><span id="clock">19:31</span><span id="sig">▂▄▆ 4G</span></div>
-    <div class="top"><button class="back" id="back" onclick="goBack()" aria-label="Back">‹</button><b id="title">SkyCheck</b><span class="mode" id="modelabel"></span></div>
-    <div class="screen" id="screen"></div>
-    <div class="shade" id="shade" onclick="closeSheet()"></div>
-    <div class="sheet" id="sheet" role="dialog"></div>
-    <div class="screen-id" id="sid"></div>
-  </div>
-  <div class="team" id="team" aria-label="Team view"></div>
+  </aside>
 </div>
 <script>
 /* ---------- scenarios: each one is a cell of the value matrix ---------- */
@@ -180,11 +317,20 @@ const SC = () => mode==="ver" ? VER[sc] : CIV[sc];
 function reset(){ st = {usedSound:false, correction:null, include:true, dir:"E", inside:false, feedback:null, notes:[], where:null, noticed:null, editing:null, alertNow:false, reveal:false, loc:false, deleted:false, marked:false, th:2}; }
 const DEF = {where:"Your location: Mokyklos g., Pabradė. Shared with 112 only during the call"};
 function esc(t){ return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]); }
+const svg = p => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${p}</svg>`;
+const I = {
+  cam: svg('<rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/>'),
+  mic: svg('<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>'),
+  up:  svg('<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>'),
+  ph:  svg('<path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2z"/>'),
+  clip:svg('<path d="M21 11l-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7"/>'),
+  pin: svg('<path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>')
+};
 function fieldV(k, dflt){ const v = st[k] ?? dflt;
-  if(st.editing===k) return `<textarea id="ed" rows="3" style="width:100%;font:inherit;padding:6px;border:1px solid var(--line);border-radius:8px">${esc(v)}</textarea>`
+  if(st.editing===k) return `<textarea id="ed" rows="3">${esc(v)}</textarea>`
     + `<div class="row"><button class="btn primary" onclick="st['${k}']=$('ed').value.trim()||null; st.editing=null; render()">Save</button>`
-    + `<button class="btn ghost" onclick="st.editing=null; render()">Cancel</button></div>`;
-  return `<div class="v">${esc(v)}</div>${st[k]?'<div class="small">Changed by you</div>':''}`; }
+    + `<button class="btn" onclick="st.editing=null; render()">Cancel</button></div>`;
+  return `<div class="v">${esc(v)}</div>${st[k]?'<div class="cap">Changed by you</div>':''}`; }
 function editBtn(k){ return st.editing===k ? "" : `<button class="edit" onclick="st.editing='${k}'; render(); $('ed').focus()">Edit</button>`; }
 function restart(){ clearTimeout(timer); const th=st.th; reset(); if(th!=null) st.th=th; hist=[]; show(mode==="ver"?"vhome":"home", false); }
 function pickMode(m){ mode=m; if(m==="civ" && !CIV[sc]) sc="B"; if(m==="ver" && !VER[sc]) sc="T1"; restart(); drawPanel(); }
@@ -192,28 +338,27 @@ function pickScen(k){ sc=k; restart(); drawPanel(); }
 function drawPanel(){
   document.body.classList.toggle("mode-team", mode==="team");
   ["civ","ver","team"].forEach(m=>$("m-"+m).classList.toggle("on", m===mode));
-  if(mode==="team"){ $("scenarios").innerHTML=`<p>The value matrix, the two-stage threshold and the targets we defend. Click a cell to open its scenario.</p>`; $("truth").style.display="none"; renderTeam(); return; }
-  $("truth").style.display="block";
+  if(mode==="team"){ $("scenarios").innerHTML=`<p class="hint">The value matrix, the two-stage threshold and the targets we defend. Click a cell to open its scenario.</p>`; renderTeam(); return; }
   const L = mode==="ver" ? VER : CIV;
   $("scenarios").innerHTML = Object.entries(L).map(([k,v]) =>
-   `<label><input type="radio" name="sc" ${k===sc?"checked":""} onchange="pickScen('${k}')"> ${v.label}</label>`).join("");
+   `<label class="scn ${k===sc?"on":""}"><input type="radio" name="sc" ${k===sc?"checked":""} onchange="pickScen('${k}')"><span class="k">${k}</span><span>${v.label.split(" · ").slice(1).join(" · ")}</span></label>`).join("");
   drawTruth();
 }
 const CELLNAME = {TP:"TP · correct warning (+5)", TN:"TN · correct non-warning (+3)", FP:"FP · false warning (−3)", FN:"FN · missed warning (−5)", OFF:"Official alert · AI not used"};
 function drawTruth(){
   const s=SC();
   $("truth").innerHTML = st.reveal
-    ? `<b>What really happened</b><br><span class="cell c-${s.cell}">${CELLNAME[s.cell]}</span><div style="margin-top:6px">${s.truth}</div>`
-    : `<b>What really happened</b><div class="small">Hidden, as it is for the user. <a href="#" onclick="st.reveal=true; drawTruth(); return false">Reveal after the demo</a></div>`;
+    ? `<div class="lbl">What really happened</div><span class="cell">${CELLNAME[s.cell]}</span><div>${s.truth}</div>`
+    : `<div class="lbl">What really happened</div><div class="muted">Hidden, as it is for the user.</div><button class="btn" onclick="st.reveal=true; drawTruth()">Reveal after the demo</button>`;
 }
 function show(id, push=true){ if(push && cur!==id) hist.push(cur); cur=id; closeSheet(); render(); }
 function goBack(){ if(hist.length){ cur=hist.pop(); closeSheet(); render(); } }
 
 function alertOn(){ return SC().alert==="red" || st.alertNow; }
 function alertStrip(){
-  if(alertOn()) return `<div class="strip alert" role="alert">⚠ AIR-RAID ALERT · official · LT72${st.alertNow?" · since 19:34":""}</div>`;
-  if(SC().alert==="unknown") return `<div class="strip warn"><span class="tag" style="background:#fff">!</span> Couldn’t check official alerts (no signal). Treat it as possible danger.</div>`;
-  return `<div class="strip ok"><span class="tag off">Official</span> No alert for your area · checked 19:31</div>`;
+  if(alertOn()) return `<div class="strip alert" role="alert"><b>⚠ Air-raid alert</b><span>Official · LT72${st.alertNow?" · since 19:34":""}</span></div>`;
+  if(SC().alert==="unknown") return `<div class="strip warn"><span><b>Couldn’t check official alerts</b> (no signal). Treat it as possible danger.</span></div>`;
+  return `<div class="strip ok"><span class="tag off">Official</span><span>No alert here · checked 19:31</span></div>`;
 }
 
 /* ---------- scripted AI results ---------- */
@@ -253,12 +398,13 @@ const CORR = {
 };
 function R(){ return st.correction && CORR[st.correction] ? CORR[st.correction] : RESULTS[SC().result]; }
 const wcls = w => w==="Likely"?"w-likely":w==="Possible"?"w-possible":"w-unlikely";
+const candRows = cs => `<div class="cands">${cs.map(c=>`<div class="cand"><div><span class="name">${c[0]}</span>${c[2]?'<span class="armed">can be armed</span>':''}</div><span class="word ${wcls(c[1])}">${c[1]}</span></div>`).join("")}</div>`;
 
 function safetyCard(r){
   if(!r.armed) return "";
-  return `<div class="card amber" role="alert"><span class="tag amb">Safety first · AI caution, not an official alert</span>
-     <h2 style="color:var(--amber);margin-top:8px">Go inside to be safe</h2>
-     <p>${r.novel?"We don’t know this object, so we can’t rule out danger.":"One possible type can carry explosives."} Don’t go closer. Keep children inside, away from windows.</p>
+  return `<div class="card amber" role="alert"><div class="tags"><span class="tag amb">AI caution · not confirmed</span></div>
+     <h2 class="hl">Go inside to be safe</h2>
+     <p>${r.novel?"We don’t know this object, so we can’t rule out danger.":"One possible type can carry explosives."} Keep children away from windows.</p>
      <button class="btn amber" onclick="st.inside=true; show('report')">I’m inside → report to 112</button></div>`;
 }
 
@@ -267,124 +413,132 @@ const VIEWS = {
 home(){ return {title:"SkyCheck", back:false, html:`
   ${alertStrip()}
   ${alertOn() ? `
-    <div class="card red"><h2 style="color:var(--red)">Go to a shelter now</h2>
+    <div class="card red"><h2 class="hl">Go to a shelter now</h2>
     <p>During an air-raid alert, don’t film or photograph flying objects. <b>No shot is worth your life.</b></p>
-    <p class="small">Source: LT72 official guidance</p></div>
-    <button class="btn danger" onclick="show('shelter')">Show nearest shelter</button>
+    <p class="cap">Source: LT72 official guidance</p></div>
+    <button class="btn danger big" onclick="show('shelter')">Show nearest shelter</button>
     <button class="btn" disabled title="Turned off during an alert">Identify something (off during alert)</button>
-    <p class="small">Identification comes back when the official alert ends.</p>` : `
-    <h2>What did you see or hear?</h2>
-    <div class="card amber" style="border-width:1px"><b>Safety first.</b> If it could be dangerous, go inside or under cover. Don’t go closer. Record only from where you are.</div>
-    <button class="btn primary" onclick="show('capture')">🎥 Film or take a photo</button>
-    <button class="btn" onclick="st.usedSound=true; show('sound')">🎙 Record the sound only</button>
-    <button class="btn ghost" onclick="show('capture')">Upload a clip I already have</button>
-    <p class="small">Works offline. Your clip and location stay on this phone unless you choose to tell 112. <a href="#" onclick="openSheet('privacy');return false">What happens to my clip?</a></p>`}
+    <p class="foot">Identification comes back when the official alert ends.</p>` : `
+    <h2 class="hl">What did you see or hear?</h2>
+    <div class="card quiet"><p><b>Safety first.</b> If it could be dangerous, go inside. Don’t go closer: record only from where you are.</p></div>
+    <div class="stack">
+      <button class="btn primary big" onclick="show('capture')">${I.cam} Film or take a photo</button>
+      <button class="btn" onclick="st.usedSound=true; show('sound')">${I.mic} Record the sound only</button>
+      <button class="btn link" onclick="show('capture')">${I.up} Upload a clip I already have</button>
+    </div>
+    <p class="foot">Works offline. Your clip and location stay on this phone unless you call 112. <a href="#" onclick="openSheet('privacy');return false">What happens to my clip?</a></p>`}
 `};},
 shelter(){ return {title:"Nearest shelter", html:`
   ${alertStrip()}
-  <div class="card"><b>Basement parking, Mokyklos g. 4</b><br><span class="small">350 m · about 4 min walk · LT72 shelter map</span></div>
-  <div class="viewfinder" style="height:200px;background:#dfe6dc;color:#445">[map from the LT72 shelter list]</div>
-  <h3>If you can’t get there</h3>
-  <ul><li>A room with no windows, two walls from the outside</li><li>Stay away from windows</li><li>Keep children and pets with you</li></ul>
+  <div class="card"><h3>Basement parking, Mokyklos g. 4</h3><p class="muted">350 m · about 4 min walk · LT72 shelter map</p></div>
+  <div class="map">${I.pin}&nbsp;Map from the LT72 shelter list</div>
+  <div class="stack"><h3>If you can’t get there</h3>
+  <ul class="list"><li>A room with no windows, two walls from the outside</li><li>Stay away from windows</li><li>Keep children and pets with you</li></ul></div>
   <button class="btn primary" onclick="show('inshelter')">I’m in a safe place</button>`};},
 inshelter(){ return {title:"Stay safe", html:`
   ${alertStrip()}
-  <h2>Stay where you are until the all-clear</h2>
+  <h2 class="hl">Stay where you are until the all-clear</h2>
   <p>We’ll notify you when LT72 ends the alert. Text your family instead of calling, to keep lines free.</p>
-  <div class="card"><b>Saw something hit the ground, or someone is hurt?</b><br>Call 112. That is what the line is for during an alert.</div>
-  <button class="btn danger" onclick="show('calldirect')">Call 112</button>`};},
+  <div class="card"><p><b>Saw something hit the ground, or someone is hurt?</b> Call 112. That is what the line is for during an alert.</p></div>
+  <button class="btn primary" onclick="show('calldirect')">${I.ph} Call 112</button>`};},
 capture(){ const dark=SC().dark; return {title:"Record", html:`
   ${alertStrip()}
-  <div class="viewfinder"><span class="rec">● REC 0:07</span><div class="dot"></div>
-   <div style="position:absolute;bottom:14px;left:14px;right:14px">Keep it in the frame while it turns. Its side shape helps most.<br>Sound is recorded too.</div></div>
+  <div class="viewfinder"><span class="rec">● REC 0:07</span><div class="frame"></div><div class="dot"></div>
+   <div class="vf-hint">Keep it in the frame while it turns: its side shape helps most. Sound is recorded too.</div></div>
   <ul class="steps">
    <li><span class="s done">✓</span> Don’t go closer: zoom instead</li>
    <li><span class="s done">✓</span> Hold still for 5–10 seconds</li>
-   <li><span class="s">3</span> Note where it is going (we’ll ask)</li></ul>
-  <button class="btn primary" onclick="show('${dark?'quality':'check'}')">Stop and check</button>`};},
+   <li class="pending"><span class="s">3</span> Note where it is going (we’ll ask)</li></ul>
+  <button class="btn primary big" onclick="show('${dark?'quality':'check'}')">Stop and check</button>`};},
 sound(){ return {title:"Record sound", html:`
   ${alertStrip()}
-  <h2>Hold the phone towards the sound</h2>
-  <div class="wave">${Array.from({length:34},(_,i)=>`<i style="height:${10+Math.abs(Math.sin(i*0.7))*48}px"></i>`).join("")}</div>
-  <p class="small">0:09 recorded. 10 seconds is enough. You can do this from inside, with a window slightly open.</p>
-  <button class="btn primary" onclick="show('check')">Stop and check</button>`};},
+  <h2 class="hl">Hold the phone towards the sound</h2>
+  <div class="wave">${Array.from({length:34},(_,i)=>`<i style="height:${10+Math.abs(Math.sin(i*0.7))*56}px"></i>`).join("")}</div>
+  <p class="muted"><b style="color:var(--ink)">0:09 recorded.</b> 10 seconds is enough. You can do this from inside, with a window slightly open.</p>
+  <button class="btn primary big" onclick="show('check')">Stop and check</button>`};},
 quality(){ return {title:"Check your clip", html:`
   ${alertStrip()}
-  <span class="tag ai">AI check</span>
-  <h2>The video is too dark to use</h2>
+  <div class="tags"><span class="tag ai">AI check</span></div>
+  <h2 class="hl">The video is too dark to use</h2>
   <p>The sound is clear, so we can work from the sound alone. Answers from sound are less certain.</p>
-  <button class="btn primary" onclick="st.usedSound=true; show('check')">Use the sound</button>
+  <div class="stack">
+  <button class="btn primary big" onclick="st.usedSound=true; show('check')">Use the sound</button>
   <button class="btn" onclick="show('capture')">Try filming again</button>
-  <button class="btn ghost" onclick="show('report')">Skip, just report to 112</button>`};},
+  <button class="btn link" onclick="show('report')">Skip, just report to 112</button></div>`};},
 check(){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="check") show("result"); }, 2600); const off=SC().offline; return {title:"Checking", html:`
+  <h2 class="hl">Checking your ${st.usedSound?'sound':'clip'}…</h2>
   <ul class="steps">
    <li><span class="s ${off?'flag':'done'}">${off?'!':'✓'}</span> ${off?'Official alerts: no signal, last check 18:02':'Official alerts checked first: none for your area'}</li>
    <li><span class="s done">✓</span> Is the ${st.usedSound?'sound':'clip'} good enough? Yes</li>
    <li><span class="s done">✓</span> Comparing with 140 known types, on this phone</li>
-   <li><span class="s">4</span> Safety rule: could any match be armed?</li></ul>
-  <p class="small">An official alert always comes before the AI’s guess, and the safety rule does not depend on the AI’s top guess.</p>
-  <button class="btn ghost" onclick="show('result')">Skip the wait (demo)</button>`};},
+   <li class="pending"><span class="s">4</span> Safety rule: could any match be armed?</li></ul>
+  <p class="foot">An official alert always comes first. The safety rule does not depend on the AI’s top guess.</p>
+  <button class="btn link" onclick="show('result')">Skip the wait (demo)</button>`};},
 result(){ const r=R();
   if(SC().lateAlert && !st.alertNow && !st.correction){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="result"){ st.alertNow=true; render(); } }, 5000); }
   return {title:"What it could be", html:`
   ${alertStrip()}
-  ${st.alertNow ? `<div class="card red"><h2 style="color:var(--red)">Official alert: go to a shelter now</h2>
+  ${st.alertNow ? `<div class="card red"><h2 class="hl">Official alert: go to a shelter now</h2>
      <p>LT72 issued an air-raid alert for your area at 19:34. <b>This replaces the AI’s answer below.</b></p>
      <button class="btn danger" onclick="show('shelter')">Show nearest shelter</button></div>
-     <p class="small" style="margin-top:14px">Earlier AI guess, kept for your report:</p>` : safetyCard(r)}
-  <div style="${st.alertNow?'opacity:.55':''}">
-  <span class="tag ai">AI guess · can be wrong</span>${st.usedSound?' <span class="tag you">from sound only</span>':''}${st.correction?' <span class="tag you">with your notes</span>':''}
-  <h2>${r.head}</h2>
-  ${r.novel ? `<p>This object may not be in our reference list (140 types, updated 2026-10-30). We won’t force the nearest label.</p>`:""}
-  <div class="card">${r.cands.map(c=>`<div class="cand"><div><div class="name">${c[0]}</div>${c[2]?'<div class="armed">can be armed</div>':''}</div><span class="word ${wcls(c[1])}">${c[1]}</span></div>`).join("")}</div>
-  ${r.lowered ? `<div class="card soft small"><b>The safety card was removed because of your note “Blinking lights”.</b> Not sure about the lights? <a href="#" onclick="st.correction=null; st.notes=[]; render(); return false">Undo</a>. If you still feel unsafe, go inside.</div>`:""}
-  ${!r.armed && !r.lowered ? `<p class="small"><b>This is not an all-clear.</b> None of these types is known to be armed, but a phone can’t see what a drone carries. If you feel unsafe, go inside.</p>`:""}
-  </div>
-  <div class="row"><button class="btn ghost" onclick="openSheet('why')">Why?</button><button class="btn ghost" onclick="openSheet('words')">How sure?</button></div>
-  ${r.armed ? `<button class="btn primary" onclick="show('report')">Report to 112</button>` : ""}
-  <div class="row"><button class="btn ghost" onclick="st.feedback='ok'; show('done')">Looks right</button><button class="btn ghost" onclick="show('notit')">Not what I saw</button></div>
-  ${r.novel ? `<button class="btn ghost" onclick="st.feedback='expert'; show('done')">Save for expert review</button>`:""}
-  ${!r.armed ? `<button class="btn" onclick="show('report')">Report to 112 anyway</button><p class="small">Flown low over a school or people? That is still worth reporting. 112 is for real need, so the app never calls for you.</p>` : ""}`};},
+     <div class="divider">Earlier AI guess, kept for your report</div>` : safetyCard(r)}
+  <section class="card ${st.alertNow?'superseded':''}">
+    <div class="tags"><span class="tag ai">AI guess · can be wrong</span>${st.usedSound?'<span class="tag you">from sound only</span>':''}${st.correction?'<span class="tag you">with your notes</span>':''}</div>
+    <h3>${r.head}</h3>
+    ${r.novel ? `<p class="muted">May not be in our reference list (140 types, updated 2026-10-30). We won’t force the nearest label.</p>`:""}
+    ${candRows(r.cands)}
+    ${r.lowered ? `<div class="undo"><p><b>Safety card removed because of your note “Blinking lights”.</b> If you still feel unsafe, go inside.</p><button class="btn" onclick="st.correction=null; st.notes=[]; render()">Not sure about the lights? Undo</button></div>`:""}
+    ${!r.armed && !r.lowered ? `<p class="notclear"><b>This is not an all-clear.</b> None of these is known to be armed, but a phone can’t see what a drone carries. If you feel unsafe, go inside.</p>`:""}
+    <div class="explain"><button class="btn link" onclick="openSheet('why')">Why?</button><button class="btn link" onclick="openSheet('words')">How sure?</button></div>
+  </section>
+  <div class="row"><button class="btn" onclick="st.feedback='ok'; show('done')">Looks right</button><button class="btn" onclick="show('notit')">Not what I saw</button></div>
+  ${r.novel ? `<button class="btn" onclick="st.feedback='expert'; show('done')">Save for expert review</button>`:""}
+  ${r.armed ? `<button class="btn" onclick="show('report')">Report to 112</button>` : ""}
+  ${!r.armed ? `<div class="stack"><button class="btn" onclick="show('report')">Report to 112 anyway</button><p class="foot">Flown low over a school or people? Still worth reporting. 112 is for real need, so the app never calls for you.</p></div>` : ""}`};},
 notit(){ const on=t=>st.notes.includes(t)?"on":""; return {title:"Help the app", html:`
-  <span class="tag you">You</span>
-  <h2>What was different?</h2>
-  <p class="small">Your notes change the ranking on this phone. A note that raises caution always counts; lowering it needs a clear sign, and you can undo it.</p>
-  <div class="chips">${["No sound","Drifting with the wind","Blinking lights","Wings, not rotors","Engine sound, not a buzz","Very fast","Bigger than a car"].map(t=>`<span class="chip ${on(t)}" onclick="toggleNote('${t}')">${t}</span>`).join("")}</div>
-  <h3>Or pick one yourself</h3>
-  <div class="chips"><span class="chip" onclick="st.correction='balloon'; show('result')">Smuggling balloon</span><span class="chip" onclick="show('report')">None of these: just report</span></div>
-  <button class="btn primary" ${st.notes.length?'':'disabled'} onclick="applyNotes()">Update the answer</button>`};},
+  <div class="tags"><span class="tag you">You</span></div>
+  <h2 class="hl">What was different?</h2>
+  <p class="muted">Your notes re-rank the answer on this phone. A note that raises caution always counts. Lowering it needs a clear sign, and you can undo it.</p>
+  <div class="chips">${["No sound","Drifting with the wind","Blinking lights","Wings, not rotors","Engine sound, not a buzz","Very fast","Bigger than a car"].map(t=>`<button class="chip ${on(t)}" onclick="toggleNote('${t}')">${t}</button>`).join("")}</div>
+  <div class="stack"><h3>Or pick one yourself</h3>
+  <div class="chips"><button class="chip" onclick="st.correction='balloon'; show('result')">Smuggling balloon</button><button class="chip" onclick="show('report')">None of these: just report</button></div></div>
+  <button class="btn primary big" ${st.notes.length?'':'disabled'} onclick="applyNotes()">Update the answer</button>`};},
 report(){ const r=R(); const top=r.cands.filter(c=>c[1]!=="Unlikely").map(c=>c[0]+" ("+c[1].toLowerCase()+")").join(", ") || "not covered by the model";
   const dirs=["N","NE","E","SE","S","SW","W","NW"];
   return {title:"Report to 112", html:`
-  <p class="small">Check this before you call. You decide what is said. Nothing is sent until you call.</p>
+  <p class="muted"><b style="color:var(--ink)">You decide what is said.</b> Nothing is sent until you call.</p>
+  <div class="group">
   <div class="field"><div class="k">When <span class="tag you">auto</span></div><div class="v">Today 19:31, for about 1 minute</div></div>
-  <div class="field">${editBtn("where")}<div class="k">Where <span class="tag you">${st.where?"you":"auto"}</span></div>${fieldV("where", DEF.where)}</div>
+  <div class="field"><div class="k">Where <span class="tag you">${st.where?"you":"auto"}</span>${editBtn("where")}</div>${fieldV("where", DEF.where)}</div>
   <div class="field"><div class="k">Moving towards <span class="tag you">you</span></div>
-    <div class="compass">${dirs.map(d=>`<span class="chip ${st.dir===d?'on':''}" onclick="st.dir='${d}';render()">${d}</span>`).join("")}</div></div>
-  <div class="field">${editBtn("noticed")}<div class="k">What you noticed <span class="tag you">you</span></div>${fieldV("noticed", st.usedSound?'Loud buzzing, could not see it clearly':'Small dark object, buzzing, low over the school yard')}</div>
+    <div class="compass">${dirs.map(d=>`<button class="chip ${st.dir===d?'on':''}" onclick="st.dir='${d}';render()">${d}</button>`).join("")}</div></div>
+  <div class="field"><div class="k">What you noticed <span class="tag you">you</span>${editBtn("noticed")}</div>${fieldV("noticed", st.usedSound?'Loud buzzing, could not see it clearly':'Small dark object, buzzing, low over the school yard')}</div>
   <div class="field"><div class="k"><span class="tag ai">AI guess</span> include in the call?</div>
     <div class="v">${r.word==="Can’t tell"?"Can’t tell. Possible: ":""}${top}</div>
-    <label class="small"><input type="checkbox" ${st.include?'checked':''} onchange="st.include=this.checked"> Say it as “an app’s guess”, not a fact</label></div>
-  <div class="card blue small"><b>Don’t post the video online.</b> It can help an attacker (LT72). It stays on your phone; 112 can ask for it.</div>
-  <button class="btn danger" onclick="show('calling')">Call 112</button>
-  <button class="btn ghost" onclick="show('done')">Don’t call. Keep it private</button>`};},
+    <label class="check"><input type="checkbox" ${st.include?'checked':''} onchange="st.include=this.checked"> Say it as “an app’s guess”, not a fact</label></div>
+  </div>
+  <div class="card quiet"><p><b>Don’t post the video online.</b> It can help an attacker (LT72). It stays on your phone; 112 can ask for it.</p></div>
+  <div class="stack actions">
+  <button class="btn primary big" onclick="show('calling')">${I.ph} Call 112</button>
+  <button class="btn link" onclick="show('done')">Don’t call. Keep it private</button></div>`};},
 calling(){ const r=R(); return {title:"Calling 112…", html:`
-  <div class="strip" style="background:#222;color:#fff">📞 112 · 00:14</div>
+  <div class="strip call">${I.ph} 112 · 00:14</div>
   <h3>Read this to the operator</h3>
-  <div class="card" style="font-size:17px;line-height:1.5">
+  <div class="card script">
    “I saw ${st.noticed ? esc((st.noticed.charAt(0).toLowerCase()+st.noticed.slice(1)).replace(/[.]$/,"")) : (st.usedSound?'something buzzing I couldn’t see clearly':'a small dark flying object')} at about 19:31 ${st.where ? "— location: " + esc(st.where.replace(/[.]$/,"")) : "near Mokyklos street in Pabradė"}. It was moving ${({N:'north',NE:'north-east',E:'east',SE:'south-east',S:'south',SW:'south-west',W:'west',NW:'north-west'})[st.dir]}.
    ${st.include?` An app guessed: ${r.word==="Can’t tell"?"it can’t tell":r.cands[0][0].toLowerCase()+", "+r.word.toLowerCase()}.`:''}
    I have a ${st.usedSound?'sound recording':'short video'} if you need it.”</div>
-  <p class="small">Answer the operator’s questions first. They lead the call.</p>
+  <p class="foot">Answer the operator’s questions first. They lead the call.</p>
   <button class="btn primary" onclick="show('done')">Call ended</button>`};},
 done(){ return {title:"Saved", html:`
   ${alertStrip()}
-  <h2>${st.feedback==='ok'?'Thanks, noted':st.feedback==='expert'?'Saved for expert review':'Saved on your phone'}</h2>
+  <h2 class="hl">${st.feedback==='ok'?'Thanks, noted':st.feedback==='expert'?'Saved for expert review':'Saved on your phone'}</h2>
   <p>We’ll tell you if officials confirm what it was. Your clip is not shared.</p>
-  ${R().armed && !st.inside && !alertOn() ? `<div class="card amber">Still outside? Go inside. A possible type can be armed.</div>`:""}
-  <div class="card small">${st.deleted?'<b>Clip deleted.</b> Only the text of your report is kept.':'Your clip is kept on this phone for 30 days, then deleted. <a href="#" onclick="st.deleted=true; render(); return false">Delete it now</a>'}</div>
+  ${R().armed && !st.inside && !alertOn() ? `<div class="card amber"><p><b>Still outside? Go inside.</b> A possible type can be armed.</p></div>`:""}
+  <div class="card">${st.deleted?'<p><b>Clip deleted.</b> Only the text of your report is kept.</p>':'<p>Your clip is kept on this phone for 30 days, then deleted.</p><button class="inline" style="align-self:flex-start" onclick="st.deleted=true; render()">Delete it now</button>'}</div>
+  <div class="stack">
   <button class="btn primary" onclick="show('followup')">Next day: open the notification (demo)</button>
-  <button class="btn ghost" onclick="restart()">Back to start</button>`};},
+  <button class="btn link" onclick="restart()">Back to start</button></div>`};},
 followup(){ const k=sc, c=st.correction;
   const F = {
    A:{truth:"a hobby drone flown without permission", src:"Police statement, 08:40", said:"small camera drone, likely", ok:true, msg:"Our guess matched."},
@@ -399,106 +553,115 @@ followup(){ const k=sc, c=st.correction;
    E:{truth:"an official alert; no AI was used", src:"LT72", said:"none", ok:true, msg:""}
   }[k];
   return {title:"Follow-up", html:`
-  <div class="notif"><b>SkyCheck</b> · today 10:12<br>Officials have confirmed what flew over Pabradė yesterday.</div>
-  <span class="tag off">Official</span> <span class="small">${F.src} (source link)</span>
-  <h2>It was ${F.truth}</h2>
-  <div class="card ${F.ok?'':'amber'}"><span class="tag ai">Our guess</span> ${F.said}<p class="small" style="color:var(--ink)">${F.msg}</p>
-   ${F.ok?'':'<p class="small">The original answer stays in your history, marked as corrected. Nothing about you is sent.</p>'}</div>
-  <h3>Was the app helpful last night?</h3>
-  <div class="row"><button class="btn ghost" onclick="restart()">Yes</button><button class="btn ghost" onclick="restart()">No</button></div>`};},
-calldirect(){ return {title:"Calling 112…", html:`<div class="strip" style="background:#222;color:#fff">📞 112 · 00:03</div><p>Answer the operator’s questions. Say where you are and what happened.</p><button class="btn primary" onclick="restart()">Call ended</button>`};},
+  <div class="notif"><div class="nh"><b>SkyCheck</b><span>today 10:12</span></div>Officials have confirmed what flew over Pabradė yesterday.</div>
+  <div class="tags"><span class="tag off">Official</span><span class="muted">${F.src} · <a href="#" onclick="return false">source link</a></span></div>
+  <h2 class="hl">It was ${F.truth}</h2>
+  <div class="card ${F.ok?'':'amber'}"><div class="tags"><span class="tag ai">Our guess</span></div><p class="said">${F.said}</p>${F.msg?`<p>${F.msg}</p>`:''}
+   ${F.ok?'':'<p class="muted">The original answer stays in your history, marked as corrected. Nothing about you is sent.</p>'}</div>
+  <div class="stack"><h3>Was the app helpful last night?</h3>
+  <div class="row"><button class="btn" onclick="restart()">Yes</button><button class="btn" onclick="restart()">No</button></div></div>`};},
+calldirect(){ return {title:"Calling 112…", html:`<div class="strip call">${I.ph} 112 · 00:03</div><p>Answer the operator’s questions. Say where you are and what happened.</p><button class="btn primary" onclick="restart()">Call ended</button>`};},
 
 /* ---------- verification views (Tomas) ---------- */
 vhome(){ return {title:"Verify a clip", back:false, html:`
-  <div class="card soft small">Editor mode: for checking material before you publish. In danger right now? <a href="#" onclick="pickMode('civ');return false">Use Quick check</a>.</div>
-  <h2>Which clip do you want to check?</h2>
-  <div class="card"><b>📎 ${sc==="T2"?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"}</b><br><span class="small">From a reader · 0:12 · “${sc==="T2"?"Drone attack on the border last night!":"Russian Shahed over Švenčionys!"}”</span></div>
-  <button class="btn primary" onclick="show('vcheck')">Check this clip</button>
-  <button class="btn ghost" disabled>Add more clips of the same event</button>
-  <p class="small">The clip is checked and kept on this device. Location data is hidden from everything you export.</p>`};},
+  <div class="card quiet"><p class="muted">Editor mode: for checking material before you publish. In danger right now? <a href="#" onclick="pickMode('civ');return false">Use Quick check</a></p></div>
+  <h2 class="hl">Which clip do you want to check?</h2>
+  <div class="card"><div class="file"><span class="ic">${I.clip}</span><div><b>${sc==="T2"?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"}</b><div class="muted">From a reader · 0:12</div></div></div>
+    <p>“${sc==="T2"?"Drone attack on the border last night!":"Russian Shahed over Švenčionys!"}”</p></div>
+  <div class="stack">
+  <button class="btn primary big" onclick="show('vcheck')">Check this clip</button>
+  <button class="btn" disabled>Add more clips of the same event</button></div>
+  <p class="foot">The clip is checked and kept on this device. Location data is hidden from everything you export.</p>`};},
 vcheck(){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="vcheck") show("vprov"); }, 2600); return {title:"Checking", html:`
+  <h2 class="hl">Checking the clip…</h2>
   <ul class="steps">
    <li><span class="s done">✓</span> Has this clip been online before? (6 key frames)</li>
    <li><span class="s done">✓</span> Reading the file’s own data: date, phone</li>
    <li><span class="s done">✓</span> Comparing with 140 reference types</li>
-   <li><span class="s">4</span> Collecting sources for each type</li></ul>
-  <button class="btn ghost" onclick="show('vprov')">Skip the wait (demo)</button>`};},
+   <li class="pending"><span class="s">4</span> Collecting sources for each type</li></ul>
+  <button class="btn link" onclick="show('vprov')">Skip the wait (demo)</button>`};},
 vprov(){ const old=SC().prov==="old"; return {title:"Is it new?", html:`
-  <span class="tag ai">Provenance check · can miss copies</span>
-  ${old ? `<div class="card amber"><h2 style="color:var(--amber)">This clip was online before</h2>
+  <div class="tags"><span class="tag ai">Provenance check · can miss copies</span></div>
+  ${old ? `<div class="card amber"><h2 class="hl">This clip was online before</h2>
      <p>An earlier copy was posted on <b>8 Sep 2024</b> on a public channel in another country. The caption “last night on the border” conflicts with this.</p>
-     <p class="small">Same frames 0:02–0:09 · the earlier copy is longer</p></div>
-     <p class="small">Identification is secondary now: an old clip says nothing about last night.</p>
+     <p class="cap">Same frames 0:02–0:09 · the earlier copy is longer</p></div>
+     <p class="foot">Identification is secondary now: an old clip says nothing about last night.</p>
+     <div class="stack">
      <button class="btn primary" onclick="show('vexport')">Make an evidence card about the date</button>
-     <button class="btn ghost" onclick="show('vresult')">See the identification anyway</button>` : `
-     <h2>No earlier copy found</h2>
+     <button class="btn link" onclick="show('vresult')">See the identification anyway</button></div>` : `
+     <h2 class="hl">No earlier copy found</h2>
+     <div class="group">
      <div class="field"><div class="k">Recorded <span class="tag ai">from the file</span></div><div class="v">14 Oct 2026, 21:14</div></div>
      <div class="field"><div class="k">Phone</div><div class="v">Android phone, night mode on</div></div>
-     <div class="field"><div class="k">Location in the file</div><div class="v">Present · hidden from exports</div></div>
-     <p class="small">“No copy found” is not proof that the clip is new: we search 3 large sources, not everything.</p>
+     <div class="field"><div class="k">Location in the file</div><div class="v">Present · hidden from exports</div></div></div>
+     <p class="foot">“No copy found” is not proof that the clip is new: we search 3 large sources, not everything.</p>
      <button class="btn primary" onclick="show('vresult')">See what it could be</button>`}`};},
 vresult(){ return {title:"What it could be", html:`
-  <span class="tag ai">AI guess · can be wrong</span>
-  <h2>Can’t separate an attack drone from a decoy</h2>
+  <div class="tags"><span class="tag ai">AI guess · can be wrong</span></div>
+  <h2 class="hl">Can’t separate an attack drone from a decoy</h2>
   <div class="card">
-   <div class="cand"><div><div class="name">Shahed-136 / Geran-2 type</div><div class="armed">can be armed</div></div><span class="word w-possible">Possible</span></div>
+   <div class="cands"><div class="cand"><div><span class="name">Shahed-136 / Geran-2 type</span><span class="armed">can be armed</span></div><span class="word w-possible">Possible</span></div></div>
    <div class="sil">${sil("frame")}${sil("delta")}</div>
-   <div class="pro"><b>For:</b> delta wing, pusher-engine sound, steady straight line</div>
-   <div class="con"><b>Against:</b> nothing in the clip; a decoy looks the same</div>
+   <div class="fa"><b>For:</b><span>delta wing, pusher-engine sound, steady straight line</span></div>
+   <div class="fa"><b>Against:</b><span>nothing in the clip; a decoy looks the same</span></div>
   </div>
   <div class="card">
-   <div class="cand"><div><div class="name">Gerbera-type decoy</div></div><span class="word w-possible">Possible</span></div>
+   <div class="cands"><div class="cand"><div><span class="name">Gerbera-type decoy</span></div><span class="word w-possible">Possible</span></div></div>
    <div class="sil">${sil("frame")}${sil("delta2")}</div>
-   <div class="pro"><b>For:</b> same shape, smaller; decoys like this were found in Lithuania in 2025</div>
-   <div class="con"><b>Against:</b> size is hard to judge at night</div>
+   <div class="fa"><b>For:</b><span>same shape, smaller; decoys like this were found in Lithuania in 2025</span></div>
+   <div class="fa"><b>Against:</b><span>size is hard to judge at night</span></div>
   </div>
   <div class="card">
-   <div class="cand"><div><div class="name">Light aircraft</div></div><span class="word w-unlikely">Unlikely</span></div>
-   <div class="con"><b>Against:</b> no navigation lights, no tail visible, sound too high</div>
+   <div class="cands"><div class="cand"><div><span class="name">Light aircraft</span></div><span class="word w-unlikely">Unlikely</span></div></div>
+   <div class="fa"><b>Against:</b><span>no navigation lights, no tail visible, sound too high</span></div>
   </div>
-  <div class="card blue small"><b>What a video can’t show:</b> who launched it, where it came from, or whether it carries explosives.</div>
-  <div class="row"><button class="btn ghost" onclick="show('vprofile')">Sources</button><button class="btn ghost" onclick="openSheet('words')">How sure?</button></div>
+  <div class="card quiet"><p><b>What a video can’t show:</b> who launched it, where it came from, or whether it carries explosives.</p></div>
+  <div class="row"><button class="btn" onclick="show('vprofile')">Sources</button><button class="btn" onclick="openSheet('words')">How sure?</button></div>
   <button class="btn primary" onclick="show('vexport')">Make an evidence card</button>`};},
 vprofile(){ return {title:"Sources", html:`
-  <h2>Shahed-136 / Geran-2 type</h2>
-  <p class="small">Prototype content: real entries would link each line to its source.</p>
-  <h3>Origin</h3>
-  <div class="field"><div class="k"><span class="tag off">Confirmed</span> several independent sources</div><div class="v">Designed in Iran; produced in Russia as Geran-2</div></div>
-  <h3>Who uses it</h3>
-  <div class="field"><div class="k"><span class="tag off">Confirmed</span></div><div class="v">Russia, against Ukraine (since 2022)</div></div>
-  <div class="field"><div class="k"><span class="tag you">Reported</span> single or unverified sources</div><div class="v">Other users named in media reports</div></div>
-  <h3>Look-alikes</h3>
-  <div class="field"><div class="v">Gerbera-type decoys: same shape, foam and plywood, usually no warhead</div></div>
-  <div class="card amber small"><b>A video alone can’t prove origin.</b> Several countries fly this type, and decoys copy its look. Say “attack drone or decoy”, not “a Russian Shahed”.</div>
-  <p class="small">Reference list updated 2026-10-30 · model v2026.10</p>
+  <h2 class="hl">Shahed-136 / Geran-2 type</h2>
+  <p class="cap">Prototype content: real entries would link each line to its source.</p>
+  <div class="stack"><h3>Origin</h3>
+  <div class="group"><div class="field"><div class="k"><span class="tag off">Confirmed</span> several independent sources</div><div class="v">Designed in Iran; produced in Russia as Geran-2</div></div></div></div>
+  <div class="stack"><h3>Who uses it</h3>
+  <div class="group"><div class="field"><div class="k"><span class="tag off">Confirmed</span></div><div class="v">Russia, against Ukraine (since 2022)</div></div>
+  <div class="field"><div class="k"><span class="tag you">Reported</span> single or unverified sources</div><div class="v">Other users named in media reports</div></div></div></div>
+  <div class="stack"><h3>Look-alikes</h3>
+  <div class="group"><div class="field"><div class="v">Gerbera-type decoys: same shape, foam and plywood, usually no warhead</div></div></div></div>
+  <div class="card amber"><p><b>A video alone can’t prove origin.</b> Several countries fly this type, and decoys copy its look. Say “attack drone or decoy”, not “a Russian Shahed”.</p></div>
+  <p class="cap">Reference list updated 2026-10-30 · model v2026.10</p>
   <button class="btn primary" onclick="show('vexport')">Make an evidence card</button>`};},
 vexport(){ const old=SC().prov==="old"; return {title:"Evidence card", html:`
   <div class="ecard">
-   <div class="hd">SkyCheck evidence card · AI assessment, not a confirmation</div>
-   <div><b>Clip:</b> ${old?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"} · checked 15 Oct 2026, 09:20</div>
-   <div><b>Provenance:</b> ${old?"earlier copy found, 8 Sep 2024, another country":"no earlier copy found in 3 sources"}</div>
-   ${old?"":`<div><b>Could be:</b> Shahed-136/Geran-2 type (possible) · Gerbera-type decoy (possible) · light aircraft (unlikely)</div>
-   <div><b>Cannot show:</b> origin, operator, payload</div>`}
-   <div><b>Sources:</b> 3 linked · reference list 2026-10-30 · model v2026.10</div>
-   <div><b>Location:</b> ${st.loc?"included (editors only)":"removed"}</div>
+   <div class="hd">SkyCheck evidence card<span>AI assessment, not a confirmation</span></div>
+   <div class="l"><b>Clip</b><span>${old?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"} · checked 15 Oct 2026, 09:20</span></div>
+   <div class="l"><b>Provenance</b><span>${old?"earlier copy found, 8 Sep 2024, another country":"no earlier copy found in 3 sources"}</span></div>
+   ${old?"":`<div class="l"><b>Could be</b><span>Shahed-136/Geran-2 type (possible) · Gerbera-type decoy (possible) · light aircraft (unlikely)</span></div>
+   <div class="l"><b>Cannot show</b><span>origin, operator, payload</span></div>`}
+   <div class="l"><b>Sources</b><span>3 linked · reference list 2026-10-30 · model v2026.10</span></div>
+   <div class="l"><b>Location</b><span>${st.loc?"included (editors only)":"removed"}</span></div>
   </div>
-  <div class="toggle"><span>Include exact location (editors only)</span><input type="checkbox" ${st.loc?"checked":""} onchange="st.loc=this.checked; render()"></div>
-  ${st.loc?`<p class="small" style="color:var(--red)">Exact location can help an attacker aim (LT72). Never publish it.</p>`:""}
-  <button class="btn primary" onclick="show('vsaved')">Add to the article draft</button>
-  <button class="btn ghost" onclick="show('vsaved')">Download as PDF</button>
-  <p class="small">There is no public share button. A screenshot of a guess becomes a claim; this card keeps the uncertainty and the sources together.</p>`};},
+  <label class="toggle"><span>Include exact location (editors only)</span><input type="checkbox" ${st.loc?"checked":""} onchange="st.loc=this.checked; render()"></label>
+  ${st.loc?`<p class="warnline">Exact location can help an attacker aim (LT72). Never publish it.</p>`:""}
+  <div class="stack">
+  <button class="btn primary big" onclick="show('vsaved')">Add to the article draft</button>
+  <button class="btn" onclick="show('vsaved')">Download as PDF</button></div>
+  <p class="foot">There is no public share button. A screenshot of a guess becomes a claim; this card keeps the uncertainty and the sources together.</p>`};},
 vsaved(){ return {title:"Saved", html:`
-  <h2>Added to your draft</h2>
+  <h2 class="hl">Added to your draft</h2>
   <p>The card is in the article draft with its sources. If you publish, the wording stays “attack drone or decoy”.</p>
-  ${st.marked ? `<div class="card soft"><b>History</b><br><span class="small">15 Oct 09:20 · AI: attack drone or decoy (possible)<br>16 Oct 10:05 · Officials: Gerbera-type decoy · <b>your correction added</b>. The original answer is kept, not rewritten.</span></div>`
+  ${st.marked ? `<div class="card"><h3>History</h3>
+     <div class="stack"><p><span class="cap">15 Oct 09:20</span><br>AI: attack drone or decoy (possible)</p>
+     <p><span class="cap">16 Oct 10:05</span><br>Officials: Gerbera-type decoy · <b>your correction added</b></p></div>
+     <p class="muted">The original answer is kept, not rewritten.</p></div>`
     : `<button class="btn" onclick="st.marked=true; render()">Later: officials confirmed it (demo)</button>`}
-  <button class="btn ghost" onclick="restart()">Check another clip</button>`};}
+  <button class="btn link" onclick="restart()">Check another clip</button>`};}
 };
 function sil(k){
   const s = {
-   frame:`<svg viewBox="0 0 100 64"><defs><filter id="b"><feGaussianBlur stdDeviation="2.2"/></filter></defs><rect width="100" height="64" fill="#1b222b"/><polygon points="50,18 72,44 50,40 28,44" fill="#000" filter="url(#b)"/></svg>`,
-   delta:`<svg viewBox="0 0 100 64"><polygon points="50,8 84,50 50,44 16,50" fill="#333"/><rect x="48" y="6" width="4" height="40" fill="#333"/><rect x="15" y="40" width="3" height="12" fill="#333"/><rect x="82" y="40" width="3" height="12" fill="#333"/></svg>`,
-   delta2:`<svg viewBox="0 0 100 64"><polygon points="50,14 76,48 50,43 24,48" fill="#666"/><rect x="48.5" y="12" width="3" height="33" fill="#666"/></svg>`
+   frame:`<svg viewBox="0 0 100 64" preserveAspectRatio="xMidYMid slice"><defs><filter id="b"><feGaussianBlur stdDeviation="2.2"/></filter></defs><rect width="100" height="64" fill="#1E293B"/><polygon points="50,18 72,44 50,40 28,44" fill="#020617" filter="url(#b)"/></svg>`,
+   delta:`<svg viewBox="0 0 100 64"><polygon points="50,8 84,50 50,44 16,50" fill="#334155"/><rect x="48" y="6" width="4" height="40" fill="#334155"/><rect x="15" y="40" width="3" height="12" fill="#334155"/><rect x="82" y="40" width="3" height="12" fill="#334155"/></svg>`,
+   delta2:`<svg viewBox="0 0 100 64"><polygon points="50,14 76,48 50,43 24,48" fill="#64748B"/><rect x="48.5" y="12" width="3" height="33" fill="#64748B"/></svg>`
   }[k];
   const cap = {frame:"reader’s frame", delta:"reference", delta2:"reference"}[k];
   return `<figure>${s}<figcaption>${cap}</figcaption></figure>`;
@@ -514,19 +677,21 @@ function applyNotes(){
 }
 
 const SHEETS = {
-why(){ const r=R(); return `<span class="tag ai">Why the AI thinks this</span><h3>What it noticed</h3><ul>${r.why.map(w=>`<li>${w}</li>`).join("")}</ul>
-  ${r.change && r.change.length ? `<h3>What would change the answer</h3><ul>${r.change.map(w=>`<li>${w}</li>`).join("")}</ul>`:""}
-  <h3>What it can’t know</h3><ul><li>What the object carries, or who flies it</li><li>Where it came from: a video alone can’t prove origin</li><li>Types it was never shown (new designs, decoys)</li></ul>
-  <p class="small">Reference types last updated 2026-10-30 · model v2026.10</p><button class="btn" onclick="closeSheet()">Close</button>`;},
+why(){ const r=R(); return `<div class="tags"><span class="tag ai">Why the AI thinks this</span></div>
+  <div class="sec"><h3>What it noticed</h3><ul class="list">${r.why.map(w=>`<li>${w}</li>`).join("")}</ul></div>
+  ${r.change && r.change.length ? `<div class="sec"><h3>What would change the answer</h3><ul class="list">${r.change.map(w=>`<li>${w}</li>`).join("")}</ul></div>`:""}
+  <div class="sec"><h3>What it can’t know</h3><ul class="list"><li>What the object carries, or who flies it</li><li>Where it came from: a video alone can’t prove origin</li><li>Types it was never shown (new designs, decoys)</li></ul></div>
+  <p class="cap">Reference types last updated 2026-10-30 · model v2026.10</p><button class="btn" onclick="closeSheet()">Close</button>`;},
 words(){ return `<h3>How sure is “Likely”?</h3>
-  <div class="cand"><span class="word w-likely">Likely</span><span class="small">Right at least 8 times in 10 for clips like this, in our tests</span></div>
-  <div class="cand"><span class="word w-possible">Possible</span><span class="small">Fits what we saw, but so do other types</span></div>
-  <div class="cand"><span class="word w-unlikely">Unlikely</span><span class="small">Checked and doesn’t fit well; shown so you know we looked</span></div>
-  <div class="cand"><b>Can’t tell</b><span class="small">Nothing reaches “Likely”, or the clip doesn’t hold enough</span></div>
-  <p class="small">We use words, not percentages. If any possible type can be armed, the amber safety card comes first, whatever the AI’s top guess. Red is used only for official alerts.</p>
+  <div class="wl">
+  <div class="cand"><span class="word w-likely">Likely</span><span>Right at least 8 times in 10 for clips like this, in our tests</span></div>
+  <div class="cand"><span class="word w-possible">Possible</span><span>Fits what we saw, but so do other types</span></div>
+  <div class="cand"><span class="word w-unlikely">Unlikely</span><span>Checked and doesn’t fit well; shown so you know we looked</span></div>
+  <div class="cand"><span class="word w-cant">Can’t tell</span><span>Nothing reaches “Likely”, or the clip doesn’t hold enough</span></div></div>
+  <p class="muted">We use words, not percentages. If any possible type can be armed, the amber safety card comes first, whatever the AI’s top guess. Red is used only for official alerts.</p>
   <button class="btn" onclick="closeSheet()">Close</button>`;},
 privacy(){ return `<h3>What happens to your clip</h3>
-  <ul><li>It is checked <b>on this phone</b>. Nothing is uploaded to identify it.</li>
+  <ul class="list"><li>It is checked <b>on this phone</b>. Nothing is uploaded to identify it.</li>
   <li>Your exact location goes only to 112, and only if you call.</li>
   <li>The clip is deleted after 30 days, or earlier when you choose.</li>
   <li>Using your clip to improve the model is a separate yes/no question, off by default.</li></ul>
@@ -545,53 +710,63 @@ function renderTeam(){
   const best=TH.reduce((b,r,j)=>{const v=W.TP*r[1]+W.TN*(900-r[2])+W.FP*r[2]+W.FN*(100-r[1]); return v>b.v?{v,j}:b;},{v:-1e9,j:0});
   const okR=rec>=0.9, okP=prec>=1/3;
   $("team").innerHTML = `
-  <h2>Value matrix: the safety-card function</h2>
-  <p class="small">Positive = at least one plausible match can be armed, so a caution is justified. Weights are ordinal (HW4), not money.</p>
+  <div><h2 class="hl">Value matrix: the safety-card function</h2>
+  <p class="lead">Positive = at least one plausible match can be armed, so a caution is justified. Weights are ordinal (HW4), not money.</p></div>
   <div class="vm">
-    <div></div><div class="hd">App shows the amber caution</div><div class="hd">App shows no caution</div>
+    <div></div><div class="hd"><span class="sw" style="background:var(--amberline)"></span>App shows the amber caution</div><div class="hd"><span class="sw" style="background:var(--edge)"></span>App shows no caution</div>
     <div class="hd">Danger really possible</div>
-    <div class="cellbox c-TP" onclick="jump('B')"><span class="w">+5</span><b>TP · correct warning</b><br>Rūta goes inside; a short scare. <u>Scenario B</u></div>
-    <div class="cellbox c-FN" onclick="jump('C')"><span class="w">−5</span><b>FN · missed warning</b><br>False calm, kids stay outside. <u>Scenario C</u></div>
+    <div class="cellbox" onclick="jump('B')"><div class="top2"><b>TP · correct warning</b><span class="w">+5</span></div>Rūta goes inside; a short scare.<span class="go">Scenario B →</span></div>
+    <div class="cellbox" onclick="jump('C')"><div class="top2"><b>FN · missed warning</b><span class="w">−5</span></div>False calm, kids stay outside.<span class="go">Scenario C →</span></div>
     <div class="hd">No real danger</div>
-    <div class="cellbox c-FP" onclick="jump('D')"><span class="w">−3</span><b>FP · false warning</b><br>Fear, a needless 112 call, alert fatigue. <u>Scenario D</u></div>
-    <div class="cellbox c-TN" onclick="jump('A')"><span class="w">+3</span><b>TN · correct non-warning</b><br>No panic; the pilot isn’t reported. <u>Scenario A</u></div>
+    <div class="cellbox" onclick="jump('D')"><div class="top2"><b>FP · false warning</b><span class="w">−3</span></div>Fear, a needless 112 call, alert fatigue.<span class="go">Scenario D →</span></div>
+    <div class="cellbox" onclick="jump('A')"><div class="top2"><b>TN · correct non-warning</b><span class="w">+3</span></div>No panic; the pilot isn’t reported.<span class="go">Scenario A →</span></div>
   </div>
-  <h3>Stage 1 threshold (internal “could be armed?” score): <b>${t.toFixed(1)}</b></h3>
+  <div>
+  <div class="thr"><h3>Stage 1 threshold (internal “could be armed?” score)</h3><b>${t.toFixed(1)}</b></div>
   <input type="range" min="0" max="${TH.length-1}" step="1" value="${i}" oninput="st.th=+this.value; renderTeam()" aria-label="Threshold">
-  <p class="small">Out of 1,000 illustrative checks, 100 of them truly dangerous (hypothetical numbers from HW4):</p>
+  <p class="muted">Out of 1,000 illustrative checks, 100 of them truly dangerous (hypothetical numbers from HW4):</p>
+  </div>
   <div class="meter">
     <div><b class="${okR?'good':'bad'}">${Math.round(rec*100)}%</b><span>recall · target ≥ 90%</span></div>
     <div><b class="${okP?'good':'bad'}">${Math.round(prec*100)}%</b><span>precision · floor ≥ 33%</span></div>
     <div><b class="${fn>10?'bad':''}">${fn}</b><span>missed dangers</span></div>
     <div><b>${fp}</b><span>false cautions</span></div>
   </div>
-  <p class="small">Matrix score ${score.toLocaleString("en")} (TP×5 + TN×3 − FP×3 − FN×5). It peaks at ${TH[best.j][0].toFixed(1)}, where ${100-TH[best.j][1]} of 100 dangers are missed.
+  <p>Matrix score ${score.toLocaleString("en")} (TP×5 + TN×3 − FP×3 − FN×5). It peaks at ${TH[best.j][0].toFixed(1)}, where ${100-TH[best.j][1]} of 100 dangers are missed.
   <b>So we don’t maximise the score.</b> A missed danger can hurt a child, so we first require recall ≥ 90%, then pick the highest threshold that meets it (0.3). Stage 2 then makes the false cautions cheap: amber, “not confirmed”, no automatic call.</p>
-  <h3>The thresholds we defend</h3>
+  <div><h3>The thresholds we defend</h3>
   <table class="th">
    <tr><th>Threshold</th><th>Value</th><th>Why this value</th></tr>
    <tr><td>Stage 1 armed-type screen</td><td>recall ≥ 90%</td><td>FN is the −5 cell; 90% is the HW4 recall-oriented point</td></tr>
    <tr><td>Caution precision floor</td><td>≥ 1 in 3 justified</td><td>Below this, cautions become noise (alert fatigue)</td></tr>
    <tr><td>“Likely”</td><td>≥ 80% right in tests</td><td>Rūta reads “likely” as “almost sure”; shown only after calibration</td></tr>
    <tr><td>“Can’t tell”</td><td>nothing reaches “Likely”</td><td>An honest abstention beats a forced label</td></tr>
-   <tr><td>“Not covered”</td><td>novelty above the 95th percentile of training clips</td><td>Unknown objects must not get the nearest military label</td></tr>
+   <tr><td>“Not covered”</td><td style="white-space:normal">novelty above the 95th percentile of training clips</td><td>Unknown objects must not get the nearest military label</td></tr>
    <tr><td>Time to safe action</td><td>median ≤ 60 s</td><td>Rūta’s own job: “know in under a minute”</td></tr>
    <tr><td>Appropriate reliance</td><td>≥ 80% of users</td><td>Follow the caution on “Can’t tell”, and catch the planted wrong answer</td></tr>
    <tr><td>SUS usability score</td><td>≥ 68</td><td>The published average; below it the AI isn’t worth the effort</td></tr>
-  </table>`;
+  </table></div>`;
 }
 function jump(k){ mode="civ"; sc=k; restart(); drawPanel(); }
 
+function bars(n){ return `<span class="bars">${[4,7,11].map((h,j)=>`<i class="${j<n?'':'off'}" style="height:${h}px"></i>`).join("")}</span>`; }
 function render(){
   if(mode==="team"){ renderTeam(); return; }
   const v=VIEWS[cur]();
   $("title").textContent=v.title; $("screen").innerHTML=v.html; $("screen").scrollTop=0;
   $("back").style.visibility = (v.back===false||!hist.length)?"hidden":"visible";
-  $("sig").textContent = SC().offline ? "▂ no data" : "▂▄▆ 4G";
+  $("sig").innerHTML = SC().offline ? bars(1)+" No data" : bars(3)+" 4G";
   $("clock").textContent = cur==="followup" ? "10:12" : mode==="ver" ? "09:20" : st.alertNow ? "19:34" : "19:31";
   $("modelabel").textContent = mode==="ver" ? "Verify" : "Quick check";
-  $("sid").textContent = sc+" · "+cur;
+  $("nowt").textContent = SC().label;
+  $("sid").textContent = "Screen: "+cur;
 }
+function fit(){ // shrink the phone on short projector screens; never in phone-only screenshots
+  const ph=document.querySelector(".phone");
+  const z = document.body.classList.contains("phoneonly") ? 1 : Math.min(1,(innerHeight-48)/820);
+  ph.style.zoom = z<1 ? String(z) : "";
+}
+addEventListener("resize", fit);
 // Deep links for screenshots: #mode=civ&sc=B&s=result&sheet=why&st={...}&phone=1
 function fromHash(){
   const p=new URLSearchParams(location.hash.slice(1));
@@ -601,6 +776,7 @@ function fromHash(){
   cur=p.get("s")||(mode==="ver"?"vhome":"home"); const home=mode==="ver"?"vhome":"home"; hist = cur===home?[]:[home];
   drawPanel(); if(mode!=="team") render();
   if(p.get("sheet")) openSheet(p.get("sheet"));
+  fit();
 }
 fromHash();
 </script>
