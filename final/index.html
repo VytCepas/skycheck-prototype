@@ -1,0 +1,608 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyCheck final prototype</title>
+<style>
+:root{
+  --ink:#1d1d1f; --muted:#5f6368; --line:#d0d3d8; --bg:#eef0f3; --card:#ffffff;
+  --soft:#f4f5f7; --red:#c62828; --redbg:#fdecea; --amber:#8a4b00; --amberbg:#fff4e0; --amberline:#e0a345;
+  --blue:#1f5fa8; --bluebg:#e8f0fb; --green:#2e6b3a; --greenbg:#e7f3ea;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 -apple-system,Segoe UI,Roboto,Arial,sans-serif}
+.wrap{display:flex;gap:28px;justify-content:center;align-items:flex-start;padding:24px 16px;flex-wrap:wrap}
+.panel{width:320px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px}
+.panel h1{font-size:17px;margin:0 0 4px}
+.panel p{margin:6px 0;color:var(--muted);font-size:13px}
+.panel label{display:block;padding:6px 8px;border-radius:8px;cursor:pointer;font-size:14px}
+.panel label:hover{background:var(--soft)}
+.panel .legend{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12px;color:var(--muted)}
+.modes{display:flex;gap:4px;margin:10px 0;background:var(--soft);padding:4px;border-radius:10px}
+.modes button{flex:1;border:0;background:none;padding:7px 4px;border-radius:8px;font:600 12px/1.2 inherit;cursor:pointer;color:var(--muted)}
+.modes button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.truth{margin-top:10px;border:1px dashed var(--line);border-radius:10px;padding:10px;font-size:13px}
+.truth .cell{display:inline-block;font-weight:700;font-size:12px;padding:2px 8px;border-radius:6px;margin-right:6px}
+.c-TP{background:#e7f3ea;color:#2e6b3a}.c-TN{background:#e8f0fb;color:#1f5fa8}.c-FP{background:#fff4e0;color:#8a4b00}.c-FN{background:#fdecea;color:#c62828}.c-OFF{background:#eee;color:#444}
+.phone{width:390px;height:800px;background:#fff;border:10px solid #222;border-radius:38px;overflow:hidden;display:flex;flex-direction:column;position:relative}
+.status{height:26px;font-size:12px;display:flex;justify-content:space-between;padding:5px 18px 0;color:#444}
+.top{display:flex;align-items:center;gap:10px;padding:6px 16px 10px;border-bottom:1px solid var(--line)}
+.top b{font-size:17px}
+.top .back{border:0;background:none;font-size:22px;cursor:pointer;padding:0 6px 0 0;color:var(--ink)}
+.top .mode{margin-left:auto;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.screen{flex:1;overflow:auto;padding:14px 16px 20px}
+.strip{display:flex;gap:8px;align-items:center;font-size:13px;padding:8px 10px;border-radius:10px;margin-bottom:12px}
+.strip.ok{background:var(--greenbg);color:var(--green)}
+.strip.warn{background:var(--amberbg);color:var(--amber)}
+.strip.alert{background:var(--red);color:#fff;font-weight:600}
+.tag{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:5px}
+.tag.ai{background:var(--bluebg);color:var(--blue)}
+.tag.off{background:var(--greenbg);color:var(--green)}
+.tag.you{background:var(--soft);color:var(--muted);border:1px solid var(--line)}
+.tag.red{background:var(--red);color:#fff}
+.tag.amb{background:var(--amber);color:#fff}
+h2{font-size:21px;margin:6px 0 8px;line-height:1.25}
+h3{font-size:15px;margin:14px 0 6px}
+.small{font-size:13px;color:var(--muted)}
+.card{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0;background:#fff}
+.card.red{border:2px solid var(--red);background:var(--redbg)}
+.card.amber{border:2px solid var(--amberline);background:var(--amberbg)}
+.card.blue{border:1px solid #b9cdea;background:var(--bluebg)}
+.card.soft{background:var(--soft);border-color:var(--soft)}
+.btn{display:block;width:100%;border:1px solid var(--ink);background:#fff;color:var(--ink);font-size:16px;font-weight:600;padding:13px;border-radius:12px;margin:8px 0;cursor:pointer;text-align:center}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.danger{background:var(--red);border-color:var(--red);color:#fff}
+.btn.amber{background:var(--amber);border-color:var(--amber);color:#fff}
+.btn.ghost{border-color:var(--line);font-weight:500}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.row{display:flex;gap:8px}.row .btn{margin:6px 0}
+.cand{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--line);padding:9px 0;gap:8px}
+.cand:first-of-type{border-top:0}
+.cand .name{font-weight:600}
+.word{font-size:12px;font-weight:700;padding:3px 8px;border-radius:20px;white-space:nowrap}
+.w-likely{background:var(--ink);color:#fff}
+.w-possible{background:#fff;border:1.5px solid var(--ink)}
+.w-unlikely{background:var(--soft);color:var(--muted)}
+.armed{color:var(--amber);font-size:12px;font-weight:700}
+ul{margin:6px 0;padding-left:20px} li{margin:3px 0}
+.viewfinder{height:300px;border-radius:14px;background:linear-gradient(#2b3440,#11161c);position:relative;display:flex;align-items:center;justify-content:center;color:#cfd6df;font-size:13px;text-align:center;padding:20px}
+.viewfinder .dot{width:10px;height:6px;background:#000;border-radius:3px;position:absolute;top:110px;left:220px;box-shadow:0 0 0 1px #556}
+.rec{position:absolute;top:12px;left:12px;background:var(--red);color:#fff;font-size:12px;padding:3px 8px;border-radius:6px}
+.wave{display:flex;gap:3px;align-items:center;height:60px;justify-content:center;margin:10px 0}
+.wave i{display:block;width:5px;background:var(--ink);border-radius:3px}
+.steps{list-style:none;padding:0;margin:8px 0}
+.steps li{display:flex;gap:10px;align-items:center;padding:7px 0;font-size:14px}
+.steps .s{width:22px;height:22px;border-radius:50%;border:2px solid var(--line);flex:none;display:flex;align-items:center;justify-content:center;font-size:12px}
+.steps .s.done{background:var(--green);border-color:var(--green);color:#fff}
+.steps .s.flag{background:var(--amber);border-color:var(--amber);color:#fff}
+.field{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:7px 0}
+.field .k{font-size:12px;color:var(--muted)}
+.field .v{font-size:15px}
+.field .edit{float:right;font-size:13px;color:var(--blue);cursor:pointer;border:0;background:none}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.chip{border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:13px;cursor:pointer;background:#fff}
+.chip.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.compass{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:6px 0}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top-left-radius:18px;border-top-right-radius:18px;box-shadow:0 -6px 30px rgba(0,0,0,.25);padding:16px;max-height:78%;overflow:auto;display:none}
+.sheet.show{display:block}
+.shade{position:absolute;inset:0;background:rgba(0,0,0,.35);display:none}
+.shade.show{display:block}
+.notif{border-radius:14px;background:#f1f1f3;padding:12px;margin:10px 0;border:1px solid var(--line)}
+.screen-id{position:absolute;bottom:4px;right:12px;font-size:10px;color:#aaa}
+.sil{display:flex;gap:8px;align-items:center;margin:6px 0}
+.sil figure{margin:0;text-align:center;font-size:11px;color:var(--muted);flex:1}
+.sil svg{width:100%;height:64px;background:#f6f7f9;border-radius:8px}
+.pro{font-size:13px;margin:2px 0}.pro b{color:var(--green)}.con{font-size:13px;margin:2px 0}.con b{color:var(--red)}
+.ecard{border:2px solid var(--ink);border-radius:12px;padding:12px;font-size:13px}
+.ecard .hd{font-weight:800;font-size:14px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:6px}
+.toggle{display:flex;justify-content:space-between;align-items:center;font-size:14px;padding:6px 0}
+/* team view */
+.team{width:760px;max-width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;display:none}
+.team h2{margin-top:0}
+.vm{display:grid;grid-template-columns:120px 1fr 1fr;gap:6px;margin:8px 0 14px}
+.vm div{border-radius:10px;padding:10px;font-size:13px}
+.vm .hd{background:var(--soft);font-weight:700}
+.vm .cellbox{cursor:pointer;border:1px solid var(--line)}
+.vm .cellbox:hover{outline:2px solid var(--ink)}
+.vm .w{font-size:20px;font-weight:800;float:right}
+.meter{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}
+.meter div{background:var(--soft);border-radius:10px;padding:10px;text-align:center}
+.meter b{display:block;font-size:22px}
+.meter span{font-size:12px;color:var(--muted)}
+.bad{color:var(--red)}.good{color:var(--green)}
+table.th{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+table.th td,table.th th{border-top:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+input[type=range]{width:100%}
+.mode-team .phone{display:none}.mode-team .team{display:block}
+.phoneonly .panel{display:none}.phoneonly .wrap{padding:0;justify-content:flex-start}.phoneonly .screen-id{display:none}
+.phoneonly .phone{border:0;border-radius:0}
+@media (max-width:760px){.panel{width:100%;max-width:390px}.vm{grid-template-columns:90px 1fr 1fr}.meter{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="panel" aria-label="Demo controls">
+    <h1>SkyCheck · final prototype (HW5)</h1>
+    <p>Mid-fidelity and clickable. The AI answers are scripted (no model runs). Each scenario is one cell of our value matrix.</p>
+    <div class="modes" role="tablist">
+      <button id="m-civ" onclick="pickMode('civ')">Quick check<br><span style="font-weight:400">Rūta</span></button>
+      <button id="m-ver" onclick="pickMode('ver')">Verify<br><span style="font-weight:400">Tomas</span></button>
+      <button id="m-team" onclick="pickMode('team')">Team view<br><span style="font-weight:400">matrix</span></button>
+    </div>
+    <div id="scenarios"></div>
+    <button class="btn ghost" onclick="restart()">Restart scenario</button>
+    <div class="truth" id="truth"></div>
+    <div class="legend">
+      <div><span class="tag off">Official</span> from LT72 / 112 / police, never from the AI</div>
+      <div style="margin-top:6px"><span class="tag ai">AI guess</span> made by the model, can be wrong</div>
+      <div style="margin-top:6px"><span class="tag you">You</span> entered or confirmed by the user</div>
+      <p>Words, not scores: <b>Likely</b> / <b>Possible</b> / <b>Unlikely</b> / <b>Can’t tell</b>. Red = official alert only; amber = AI caution.</p>
+    </div>
+  </div>
+  <div class="phone" aria-label="Phone screen">
+    <div class="status"><span id="clock">19:31</span><span id="sig">▂▄▆ 4G</span></div>
+    <div class="top"><button class="back" id="back" onclick="goBack()" aria-label="Back">‹</button><b id="title">SkyCheck</b><span class="mode" id="modelabel"></span></div>
+    <div class="screen" id="screen"></div>
+    <div class="shade" id="shade" onclick="closeSheet()"></div>
+    <div class="sheet" id="sheet" role="dialog"></div>
+    <div class="screen-id" id="sid"></div>
+  </div>
+  <div class="team" id="team" aria-label="Team view"></div>
+</div>
+<script>
+/* ---------- scenarios: each one is a cell of the value matrix ---------- */
+const CIV = {
+  A:{label:"A · Hobby drone, AI right", cell:"TN", alert:"none", result:"civil",
+     truth:"A hobby drone flown without permission. No warning was shown, and none was needed."},
+  B:{label:"B · Primary: can’t tell, could be armed", cell:"TP", alert:"none", result:"unsure",
+     truth:"A Gerbera-type decoy drone, found crashed 4 km away. Until it was found an armed version could not be ruled out, so the caution was justified."},
+  C:{label:"C · AI misses it, official alert follows", cell:"FN", alert:"none", result:"miss", lateAlert:true,
+     truth:"A low, slow Gerbera-type drone. The AI said “camera drone”, a missed warning. Contained by: no all-clear wording, the official alert taking over at 19:34, and the user’s own notes."},
+  D:{label:"D · Plane lights, false warning", cell:"FP", alert:"none", result:"fp",
+     truth:"A passenger plane on approach to Vilnius. The AI caution was a false alarm. Contained by: amber, “not confirmed” wording, no automatic call, and the user’s note about blinking lights."},
+  E:{label:"E · Official air-raid alert is on", cell:"OFF", alert:"red", result:"civil",
+     truth:"No AI decision at all: during an official alert the camera is off and the app shows shelters (LT72)."},
+  F:{label:"F · Dark video, no signal", cell:"FP", alert:"unknown", dark:true, offline:true, result:"unsure",
+     truth:"A small camera drone. “Can’t tell” plus caution was the honest answer for a dark clip with no alert feed. A contained false warning: the price of not guessing."},
+  G:{label:"G · Object the model doesn’t know", cell:"FP", alert:"none", result:"novel",
+     truth:"A tethered survey balloon from a building site. It is not in the reference set, and the app said so instead of forcing the nearest military label."}
+};
+const VER = {
+  T1:{label:"T1 · “Shahed over Švenčionys!” reader video", cell:"TP", prov:"new",
+      truth:"A Gerbera-type decoy. SkyCheck kept the Shahed and the decoy side by side and said a video can’t separate them, so the story ran as “attack drone or decoy”."},
+  T2:{label:"T2 · Old clip with a new caption", cell:"TN", prov:"old",
+      truth:"The clip was first posted in September 2024 in another country. Provenance caught it before any identification was needed."}
+};
+let mode="civ", sc="B", hist=[], cur="home", st={}, timer=null;
+const $ = id => document.getElementById(id);
+const SC = () => mode==="ver" ? VER[sc] : CIV[sc];
+function reset(){ st = {usedSound:false, correction:null, include:true, dir:"E", inside:false, feedback:null, notes:[], where:null, noticed:null, editing:null, alertNow:false, reveal:false, loc:false, deleted:false, marked:false, th:2}; }
+const DEF = {where:"Your location: Mokyklos g., Pabradė. Shared with 112 only during the call"};
+function esc(t){ return String(t).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]); }
+function fieldV(k, dflt){ const v = st[k] ?? dflt;
+  if(st.editing===k) return `<textarea id="ed" rows="3" style="width:100%;font:inherit;padding:6px;border:1px solid var(--line);border-radius:8px">${esc(v)}</textarea>`
+    + `<div class="row"><button class="btn primary" onclick="st['${k}']=$('ed').value.trim()||null; st.editing=null; render()">Save</button>`
+    + `<button class="btn ghost" onclick="st.editing=null; render()">Cancel</button></div>`;
+  return `<div class="v">${esc(v)}</div>${st[k]?'<div class="small">Changed by you</div>':''}`; }
+function editBtn(k){ return st.editing===k ? "" : `<button class="edit" onclick="st.editing='${k}'; render(); $('ed').focus()">Edit</button>`; }
+function restart(){ clearTimeout(timer); const th=st.th; reset(); if(th!=null) st.th=th; hist=[]; show(mode==="ver"?"vhome":"home", false); }
+function pickMode(m){ mode=m; if(m==="civ" && !CIV[sc]) sc="B"; if(m==="ver" && !VER[sc]) sc="T1"; restart(); drawPanel(); }
+function pickScen(k){ sc=k; restart(); drawPanel(); }
+function drawPanel(){
+  document.body.classList.toggle("mode-team", mode==="team");
+  ["civ","ver","team"].forEach(m=>$("m-"+m).classList.toggle("on", m===mode));
+  if(mode==="team"){ $("scenarios").innerHTML=`<p>The value matrix, the two-stage threshold and the targets we defend. Click a cell to open its scenario.</p>`; $("truth").style.display="none"; renderTeam(); return; }
+  $("truth").style.display="block";
+  const L = mode==="ver" ? VER : CIV;
+  $("scenarios").innerHTML = Object.entries(L).map(([k,v]) =>
+   `<label><input type="radio" name="sc" ${k===sc?"checked":""} onchange="pickScen('${k}')"> ${v.label}</label>`).join("");
+  drawTruth();
+}
+const CELLNAME = {TP:"TP · correct warning (+5)", TN:"TN · correct non-warning (+3)", FP:"FP · false warning (−3)", FN:"FN · missed warning (−5)", OFF:"Official alert · AI not used"};
+function drawTruth(){
+  const s=SC();
+  $("truth").innerHTML = st.reveal
+    ? `<b>What really happened</b><br><span class="cell c-${s.cell}">${CELLNAME[s.cell]}</span><div style="margin-top:6px">${s.truth}</div>`
+    : `<b>What really happened</b><div class="small">Hidden, as it is for the user. <a href="#" onclick="st.reveal=true; drawTruth(); return false">Reveal after the demo</a></div>`;
+}
+function show(id, push=true){ if(push && cur!==id) hist.push(cur); cur=id; closeSheet(); render(); }
+function goBack(){ if(hist.length){ cur=hist.pop(); closeSheet(); render(); } }
+
+function alertOn(){ return SC().alert==="red" || st.alertNow; }
+function alertStrip(){
+  if(alertOn()) return `<div class="strip alert" role="alert">⚠ AIR-RAID ALERT · official · LT72${st.alertNow?" · since 19:34":""}</div>`;
+  if(SC().alert==="unknown") return `<div class="strip warn"><span class="tag" style="background:#fff">!</span> Couldn’t check official alerts (no signal). Treat it as possible danger.</div>`;
+  return `<div class="strip ok"><span class="tag off">Official</span> No alert for your area · checked 19:31</div>`;
+}
+
+/* ---------- scripted AI results ---------- */
+const RESULTS = {
+  civil:{ head:"Most likely a small camera drone", word:"Likely", armed:false,
+    cands:[["Small camera drone (4 rotors)","Likely",false],["Larger hobby drone","Possible",false],["Smuggling balloon","Unlikely",false]],
+    why:["High buzz that changes pitch as it turns: typical of 4 small rotors","Hovers, then changes direction: balloons drift with the wind","Small in the frame at the distance you estimated"],
+    change:["A steady engine drone instead of a buzz would bring attack types back in"]},
+  unsure:{ head:"Can’t tell from this clip", word:"Can’t tell", armed:true,
+    cands:[["Shahed-type attack drone or decoy","Possible",true],["Light aircraft","Possible",false],["Small camera drone","Unlikely",false]],
+    why:["Engine-like drone, not a rotor buzz: fits a decoy, an attack drone and a light aircraft","The video is too short to see the wing shape",
+         "<b>The image and the sound disagree</b>: the shape looks small, the sound fits a piston engine. We show both instead of averaging them","Decoys and armed versions look and sound the same on a phone"],
+    change:["5 more seconds while it turns would show the wing shape","Blinking navigation lights would point to an aircraft"]},
+  miss:{ head:"Most likely a small camera drone", word:"Likely", armed:false,
+    cands:[["Small camera drone (4 rotors)","Likely",false],["Larger hobby drone","Possible",false],["Smuggling balloon","Unlikely",false]],
+    why:["Steady buzz at low height","Seems to hover near the trees","Wind noise covers part of the sound"],
+    change:["Seeing wings instead of rotors would bring attack types back in","An engine drone instead of a buzz would do the same"]},
+  fp:{ head:"A dangerous type can’t be ruled out", word:"Can’t tell", armed:true,
+    cands:[["Light aircraft or airliner","Possible",false],["Shahed-type attack drone or decoy","Possible",true],["Small camera drone","Unlikely",false]],
+    why:["Steady engine noise and a straight line","At dusk the shape is only a dark dot","Attack drones also fly straight and steady"],
+    change:["Blinking red and green lights would point strongly to a plane: attack drones usually fly dark"]},
+  novel:{ head:"Not covered by the current model", word:"Can’t tell", armed:true, novel:true,
+    cands:[["Closest known: weather balloon","Unlikely",false],["Closest known: large hobby drone","Unlikely",false]],
+    why:["The shape and the way it holds still match none of the 140 reference types well","The closest matches are poor, so we don’t name one"],
+    change:["A photo from closer (only if safe) or a description in your own words would help an expert"]}
+};
+const CORR = {
+  balloon:{ head:"With your notes: possibly a smuggling balloon", word:"Possible", armed:false,
+    cands:[["Smuggling balloon","Possible",false],["Small camera drone","Possible",false],["Larger hobby drone","Unlikely",false]],
+    why:["You said: no sound, or drifting with the wind","Balloons drift with the wind; drones change direction","Your notes moved “balloon” up. The clip alone pointed to a drone"], change:[]},
+  aircraft:{ head:"With your notes: most likely a plane", word:"Likely", armed:false, lowered:true,
+    cands:[["Light aircraft or airliner","Likely",false],["Shahed-type attack drone or decoy","Unlikely",true],["Small camera drone","Unlikely",false]],
+    why:["You said: blinking lights. Planes must show them; attack drones usually fly dark","Steady engine noise and a straight line fit a plane on approach","Your note moved “plane” up. The clip alone could not separate them"], change:[]},
+  raise:{ head:"With your notes: a dangerous type can’t be ruled out", word:"Can’t tell", armed:true,
+    cands:[["Shahed-type attack drone or decoy","Possible",true],["Small camera drone","Possible",false],["Light aircraft","Unlikely",false]],
+    why:["You said: wings, not rotors, or an engine sound","That fits attack drones and decoys, which fly low and slow at the end","Your note raised the caution. Notes that raise caution always count"], change:[]}
+};
+function R(){ return st.correction && CORR[st.correction] ? CORR[st.correction] : RESULTS[SC().result]; }
+const wcls = w => w==="Likely"?"w-likely":w==="Possible"?"w-possible":"w-unlikely";
+
+function safetyCard(r){
+  if(!r.armed) return "";
+  return `<div class="card amber" role="alert"><span class="tag amb">Safety first · AI caution, not an official alert</span>
+     <h2 style="color:var(--amber);margin-top:8px">Go inside to be safe</h2>
+     <p>${r.novel?"We don’t know this object, so we can’t rule out danger.":"One possible type can carry explosives."} Don’t go closer. Keep children inside, away from windows.</p>
+     <button class="btn amber" onclick="st.inside=true; show('report')">I’m inside → report to 112</button></div>`;
+}
+
+/* ---------- civilian views (Rūta) ---------- */
+const VIEWS = {
+home(){ return {title:"SkyCheck", back:false, html:`
+  ${alertStrip()}
+  ${alertOn() ? `
+    <div class="card red"><h2 style="color:var(--red)">Go to a shelter now</h2>
+    <p>During an air-raid alert, don’t film or photograph flying objects. <b>No shot is worth your life.</b></p>
+    <p class="small">Source: LT72 official guidance</p></div>
+    <button class="btn danger" onclick="show('shelter')">Show nearest shelter</button>
+    <button class="btn" disabled title="Turned off during an alert">Identify something (off during alert)</button>
+    <p class="small">Identification comes back when the official alert ends.</p>` : `
+    <h2>What did you see or hear?</h2>
+    <div class="card amber" style="border-width:1px"><b>Safety first.</b> If it could be dangerous, go inside or under cover. Don’t go closer. Record only from where you are.</div>
+    <button class="btn primary" onclick="show('capture')">🎥 Film or take a photo</button>
+    <button class="btn" onclick="st.usedSound=true; show('sound')">🎙 Record the sound only</button>
+    <button class="btn ghost" onclick="show('capture')">Upload a clip I already have</button>
+    <p class="small">Works offline. Your clip and location stay on this phone unless you choose to tell 112. <a href="#" onclick="openSheet('privacy');return false">What happens to my clip?</a></p>`}
+`};},
+shelter(){ return {title:"Nearest shelter", html:`
+  ${alertStrip()}
+  <div class="card"><b>Basement parking, Mokyklos g. 4</b><br><span class="small">350 m · about 4 min walk · LT72 shelter map</span></div>
+  <div class="viewfinder" style="height:200px;background:#dfe6dc;color:#445">[map from the LT72 shelter list]</div>
+  <h3>If you can’t get there</h3>
+  <ul><li>A room with no windows, two walls from the outside</li><li>Stay away from windows</li><li>Keep children and pets with you</li></ul>
+  <button class="btn primary" onclick="show('inshelter')">I’m in a safe place</button>`};},
+inshelter(){ return {title:"Stay safe", html:`
+  ${alertStrip()}
+  <h2>Stay where you are until the all-clear</h2>
+  <p>We’ll notify you when LT72 ends the alert. Text your family instead of calling, to keep lines free.</p>
+  <div class="card"><b>Saw something hit the ground, or someone is hurt?</b><br>Call 112. That is what the line is for during an alert.</div>
+  <button class="btn danger" onclick="show('calldirect')">Call 112</button>`};},
+capture(){ const dark=SC().dark; return {title:"Record", html:`
+  ${alertStrip()}
+  <div class="viewfinder"><span class="rec">● REC 0:07</span><div class="dot"></div>
+   <div style="position:absolute;bottom:14px;left:14px;right:14px">Keep it in the frame while it turns. Its side shape helps most.<br>Sound is recorded too.</div></div>
+  <ul class="steps">
+   <li><span class="s done">✓</span> Don’t go closer: zoom instead</li>
+   <li><span class="s done">✓</span> Hold still for 5–10 seconds</li>
+   <li><span class="s">3</span> Note where it is going (we’ll ask)</li></ul>
+  <button class="btn primary" onclick="show('${dark?'quality':'check'}')">Stop and check</button>`};},
+sound(){ return {title:"Record sound", html:`
+  ${alertStrip()}
+  <h2>Hold the phone towards the sound</h2>
+  <div class="wave">${Array.from({length:34},(_,i)=>`<i style="height:${10+Math.abs(Math.sin(i*0.7))*48}px"></i>`).join("")}</div>
+  <p class="small">0:09 recorded. 10 seconds is enough. You can do this from inside, with a window slightly open.</p>
+  <button class="btn primary" onclick="show('check')">Stop and check</button>`};},
+quality(){ return {title:"Check your clip", html:`
+  ${alertStrip()}
+  <span class="tag ai">AI check</span>
+  <h2>The video is too dark to use</h2>
+  <p>The sound is clear, so we can work from the sound alone. Answers from sound are less certain.</p>
+  <button class="btn primary" onclick="st.usedSound=true; show('check')">Use the sound</button>
+  <button class="btn" onclick="show('capture')">Try filming again</button>
+  <button class="btn ghost" onclick="show('report')">Skip, just report to 112</button>`};},
+check(){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="check") show("result"); }, 2600); const off=SC().offline; return {title:"Checking", html:`
+  <ul class="steps">
+   <li><span class="s ${off?'flag':'done'}">${off?'!':'✓'}</span> ${off?'Official alerts: no signal, last check 18:02':'Official alerts checked first: none for your area'}</li>
+   <li><span class="s done">✓</span> Is the ${st.usedSound?'sound':'clip'} good enough? Yes</li>
+   <li><span class="s done">✓</span> Comparing with 140 known types, on this phone</li>
+   <li><span class="s">4</span> Safety rule: could any match be armed?</li></ul>
+  <p class="small">An official alert always comes before the AI’s guess, and the safety rule does not depend on the AI’s top guess.</p>
+  <button class="btn ghost" onclick="show('result')">Skip the wait (demo)</button>`};},
+result(){ const r=R();
+  if(SC().lateAlert && !st.alertNow && !st.correction){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="result"){ st.alertNow=true; render(); } }, 5000); }
+  return {title:"What it could be", html:`
+  ${alertStrip()}
+  ${st.alertNow ? `<div class="card red"><h2 style="color:var(--red)">Official alert: go to a shelter now</h2>
+     <p>LT72 issued an air-raid alert for your area at 19:34. <b>This replaces the AI’s answer below.</b></p>
+     <button class="btn danger" onclick="show('shelter')">Show nearest shelter</button></div>
+     <p class="small" style="margin-top:14px">Earlier AI guess, kept for your report:</p>` : safetyCard(r)}
+  <div style="${st.alertNow?'opacity:.55':''}">
+  <span class="tag ai">AI guess · can be wrong</span>${st.usedSound?' <span class="tag you">from sound only</span>':''}${st.correction?' <span class="tag you">with your notes</span>':''}
+  <h2>${r.head}</h2>
+  ${r.novel ? `<p>This object may not be in our reference list (140 types, updated 2026-10-30). We won’t force the nearest label.</p>`:""}
+  <div class="card">${r.cands.map(c=>`<div class="cand"><div><div class="name">${c[0]}</div>${c[2]?'<div class="armed">can be armed</div>':''}</div><span class="word ${wcls(c[1])}">${c[1]}</span></div>`).join("")}</div>
+  ${r.lowered ? `<div class="card soft small"><b>The safety card was removed because of your note “Blinking lights”.</b> Not sure about the lights? <a href="#" onclick="st.correction=null; st.notes=[]; render(); return false">Undo</a>. If you still feel unsafe, go inside.</div>`:""}
+  ${!r.armed && !r.lowered ? `<p class="small"><b>This is not an all-clear.</b> None of these types is known to be armed, but a phone can’t see what a drone carries. If you feel unsafe, go inside.</p>`:""}
+  </div>
+  <div class="row"><button class="btn ghost" onclick="openSheet('why')">Why?</button><button class="btn ghost" onclick="openSheet('words')">How sure?</button></div>
+  ${r.armed ? `<button class="btn primary" onclick="show('report')">Report to 112</button>` : ""}
+  <div class="row"><button class="btn ghost" onclick="st.feedback='ok'; show('done')">Looks right</button><button class="btn ghost" onclick="show('notit')">Not what I saw</button></div>
+  ${r.novel ? `<button class="btn ghost" onclick="st.feedback='expert'; show('done')">Save for expert review</button>`:""}
+  ${!r.armed ? `<button class="btn" onclick="show('report')">Report to 112 anyway</button><p class="small">Flown low over a school or people? That is still worth reporting. 112 is for real need, so the app never calls for you.</p>` : ""}`};},
+notit(){ const on=t=>st.notes.includes(t)?"on":""; return {title:"Help the app", html:`
+  <span class="tag you">You</span>
+  <h2>What was different?</h2>
+  <p class="small">Your notes change the ranking on this phone. A note that raises caution always counts; lowering it needs a clear sign, and you can undo it.</p>
+  <div class="chips">${["No sound","Drifting with the wind","Blinking lights","Wings, not rotors","Engine sound, not a buzz","Very fast","Bigger than a car"].map(t=>`<span class="chip ${on(t)}" onclick="toggleNote('${t}')">${t}</span>`).join("")}</div>
+  <h3>Or pick one yourself</h3>
+  <div class="chips"><span class="chip" onclick="st.correction='balloon'; show('result')">Smuggling balloon</span><span class="chip" onclick="show('report')">None of these: just report</span></div>
+  <button class="btn primary" ${st.notes.length?'':'disabled'} onclick="applyNotes()">Update the answer</button>`};},
+report(){ const r=R(); const top=r.cands.filter(c=>c[1]!=="Unlikely").map(c=>c[0]+" ("+c[1].toLowerCase()+")").join(", ") || "not covered by the model";
+  const dirs=["N","NE","E","SE","S","SW","W","NW"];
+  return {title:"Report to 112", html:`
+  <p class="small">Check this before you call. You decide what is said. Nothing is sent until you call.</p>
+  <div class="field"><div class="k">When <span class="tag you">auto</span></div><div class="v">Today 19:31, for about 1 minute</div></div>
+  <div class="field">${editBtn("where")}<div class="k">Where <span class="tag you">${st.where?"you":"auto"}</span></div>${fieldV("where", DEF.where)}</div>
+  <div class="field"><div class="k">Moving towards <span class="tag you">you</span></div>
+    <div class="compass">${dirs.map(d=>`<span class="chip ${st.dir===d?'on':''}" onclick="st.dir='${d}';render()">${d}</span>`).join("")}</div></div>
+  <div class="field">${editBtn("noticed")}<div class="k">What you noticed <span class="tag you">you</span></div>${fieldV("noticed", st.usedSound?'Loud buzzing, could not see it clearly':'Small dark object, buzzing, low over the school yard')}</div>
+  <div class="field"><div class="k"><span class="tag ai">AI guess</span> include in the call?</div>
+    <div class="v">${r.word==="Can’t tell"?"Can’t tell. Possible: ":""}${top}</div>
+    <label class="small"><input type="checkbox" ${st.include?'checked':''} onchange="st.include=this.checked"> Say it as “an app’s guess”, not a fact</label></div>
+  <div class="card blue small"><b>Don’t post the video online.</b> It can help an attacker (LT72). It stays on your phone; 112 can ask for it.</div>
+  <button class="btn danger" onclick="show('calling')">Call 112</button>
+  <button class="btn ghost" onclick="show('done')">Don’t call. Keep it private</button>`};},
+calling(){ const r=R(); return {title:"Calling 112…", html:`
+  <div class="strip" style="background:#222;color:#fff">📞 112 · 00:14</div>
+  <h3>Read this to the operator</h3>
+  <div class="card" style="font-size:17px;line-height:1.5">
+   “I saw ${st.noticed ? esc((st.noticed.charAt(0).toLowerCase()+st.noticed.slice(1)).replace(/[.]$/,"")) : (st.usedSound?'something buzzing I couldn’t see clearly':'a small dark flying object')} at about 19:31 ${st.where ? "— location: " + esc(st.where.replace(/[.]$/,"")) : "near Mokyklos street in Pabradė"}. It was moving ${({N:'north',NE:'north-east',E:'east',SE:'south-east',S:'south',SW:'south-west',W:'west',NW:'north-west'})[st.dir]}.
+   ${st.include?` An app guessed: ${r.word==="Can’t tell"?"it can’t tell":r.cands[0][0].toLowerCase()+", "+r.word.toLowerCase()}.`:''}
+   I have a ${st.usedSound?'sound recording':'short video'} if you need it.”</div>
+  <p class="small">Answer the operator’s questions first. They lead the call.</p>
+  <button class="btn primary" onclick="show('done')">Call ended</button>`};},
+done(){ return {title:"Saved", html:`
+  ${alertStrip()}
+  <h2>${st.feedback==='ok'?'Thanks, noted':st.feedback==='expert'?'Saved for expert review':'Saved on your phone'}</h2>
+  <p>We’ll tell you if officials confirm what it was. Your clip is not shared.</p>
+  ${R().armed && !st.inside && !alertOn() ? `<div class="card amber">Still outside? Go inside. A possible type can be armed.</div>`:""}
+  <div class="card small">${st.deleted?'<b>Clip deleted.</b> Only the text of your report is kept.':'Your clip is kept on this phone for 30 days, then deleted. <a href="#" onclick="st.deleted=true; render(); return false">Delete it now</a>'}</div>
+  <button class="btn primary" onclick="show('followup')">Next day: open the notification (demo)</button>
+  <button class="btn ghost" onclick="restart()">Back to start</button>`};},
+followup(){ const k=sc, c=st.correction;
+  const F = {
+   A:{truth:"a hobby drone flown without permission", src:"Police statement, 08:40", said:"small camera drone, likely", ok:true, msg:"Our guess matched."},
+   B:{truth:"a Gerbera-type decoy drone, found crashed 4 km away", src:"Police and army statement, 09:10", said:"can’t tell; an armed type was possible", ok:true, msg:"Going inside was the right call: until it was found, an armed version could not be ruled out."},
+   C:{truth:"a Gerbera-type decoy drone flying low", src:"Army statement, 09:10", said: c==="raise"?"can’t tell, after your notes":"small camera drone, likely", ok: c==="raise",
+      msg: c==="raise" ? "Your note caught what the AI missed. The official alert at 19:34 reached you as well." :
+      "<b>We got this wrong.</b> Low and slow, it sounded like rotors. We should have said “Can’t tell”. The official alert at 19:34 reached you anyway, and this case goes to the team that checks the model."},
+   D:{truth:"a passenger plane on approach to Vilnius", src:"Public flight-tracking data", said: c==="aircraft"?"most likely a plane, after your notes":"can’t rule out a dangerous type", ok: c==="aircraft",
+      msg: c==="aircraft" ? "Your note about the blinking lights was right." : "<b>A false alarm.</b> The caution was amber and said “not confirmed”, and the app did not push you to call 112."},
+   F:{truth:"a small camera drone", src:"Police statement, 08:40", said:"can’t tell from the sound", ok:true, msg:"“Can’t tell” was the honest answer for a dark clip with no signal."},
+   G:{truth:"a tethered survey balloon from a building site", src:"Municipality, 09:30", said:"not covered by the model", ok:true, msg:"We didn’t know this type and said so. It is now on the list for the model team to add."},
+   E:{truth:"an official alert; no AI was used", src:"LT72", said:"none", ok:true, msg:""}
+  }[k];
+  return {title:"Follow-up", html:`
+  <div class="notif"><b>SkyCheck</b> · today 10:12<br>Officials have confirmed what flew over Pabradė yesterday.</div>
+  <span class="tag off">Official</span> <span class="small">${F.src} (source link)</span>
+  <h2>It was ${F.truth}</h2>
+  <div class="card ${F.ok?'':'amber'}"><span class="tag ai">Our guess</span> ${F.said}<p class="small" style="color:var(--ink)">${F.msg}</p>
+   ${F.ok?'':'<p class="small">The original answer stays in your history, marked as corrected. Nothing about you is sent.</p>'}</div>
+  <h3>Was the app helpful last night?</h3>
+  <div class="row"><button class="btn ghost" onclick="restart()">Yes</button><button class="btn ghost" onclick="restart()">No</button></div>`};},
+calldirect(){ return {title:"Calling 112…", html:`<div class="strip" style="background:#222;color:#fff">📞 112 · 00:03</div><p>Answer the operator’s questions. Say where you are and what happened.</p><button class="btn primary" onclick="restart()">Call ended</button>`};},
+
+/* ---------- verification views (Tomas) ---------- */
+vhome(){ return {title:"Verify a clip", back:false, html:`
+  <div class="card soft small">Editor mode: for checking material before you publish. In danger right now? <a href="#" onclick="pickMode('civ');return false">Use Quick check</a>.</div>
+  <h2>Which clip do you want to check?</h2>
+  <div class="card"><b>📎 ${sc==="T2"?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"}</b><br><span class="small">From a reader · 0:12 · “${sc==="T2"?"Drone attack on the border last night!":"Russian Shahed over Švenčionys!"}”</span></div>
+  <button class="btn primary" onclick="show('vcheck')">Check this clip</button>
+  <button class="btn ghost" disabled>Add more clips of the same event</button>
+  <p class="small">The clip is checked and kept on this device. Location data is hidden from everything you export.</p>`};},
+vcheck(){ clearTimeout(timer); timer=setTimeout(()=>{ if(cur==="vcheck") show("vprov"); }, 2600); return {title:"Checking", html:`
+  <ul class="steps">
+   <li><span class="s done">✓</span> Has this clip been online before? (6 key frames)</li>
+   <li><span class="s done">✓</span> Reading the file’s own data: date, phone</li>
+   <li><span class="s done">✓</span> Comparing with 140 reference types</li>
+   <li><span class="s">4</span> Collecting sources for each type</li></ul>
+  <button class="btn ghost" onclick="show('vprov')">Skip the wait (demo)</button>`};},
+vprov(){ const old=SC().prov==="old"; return {title:"Is it new?", html:`
+  <span class="tag ai">Provenance check · can miss copies</span>
+  ${old ? `<div class="card amber"><h2 style="color:var(--amber)">This clip was online before</h2>
+     <p>An earlier copy was posted on <b>8 Sep 2024</b> on a public channel in another country. The caption “last night on the border” conflicts with this.</p>
+     <p class="small">Same frames 0:02–0:09 · the earlier copy is longer</p></div>
+     <p class="small">Identification is secondary now: an old clip says nothing about last night.</p>
+     <button class="btn primary" onclick="show('vexport')">Make an evidence card about the date</button>
+     <button class="btn ghost" onclick="show('vresult')">See the identification anyway</button>` : `
+     <h2>No earlier copy found</h2>
+     <div class="field"><div class="k">Recorded <span class="tag ai">from the file</span></div><div class="v">14 Oct 2026, 21:14</div></div>
+     <div class="field"><div class="k">Phone</div><div class="v">Android phone, night mode on</div></div>
+     <div class="field"><div class="k">Location in the file</div><div class="v">Present · hidden from exports</div></div>
+     <p class="small">“No copy found” is not proof that the clip is new: we search 3 large sources, not everything.</p>
+     <button class="btn primary" onclick="show('vresult')">See what it could be</button>`}`};},
+vresult(){ return {title:"What it could be", html:`
+  <span class="tag ai">AI guess · can be wrong</span>
+  <h2>Can’t separate an attack drone from a decoy</h2>
+  <div class="card">
+   <div class="cand"><div><div class="name">Shahed-136 / Geran-2 type</div><div class="armed">can be armed</div></div><span class="word w-possible">Possible</span></div>
+   <div class="sil">${sil("frame")}${sil("delta")}</div>
+   <div class="pro"><b>For:</b> delta wing, pusher-engine sound, steady straight line</div>
+   <div class="con"><b>Against:</b> nothing in the clip; a decoy looks the same</div>
+  </div>
+  <div class="card">
+   <div class="cand"><div><div class="name">Gerbera-type decoy</div></div><span class="word w-possible">Possible</span></div>
+   <div class="sil">${sil("frame")}${sil("delta2")}</div>
+   <div class="pro"><b>For:</b> same shape, smaller; decoys like this were found in Lithuania in 2025</div>
+   <div class="con"><b>Against:</b> size is hard to judge at night</div>
+  </div>
+  <div class="card">
+   <div class="cand"><div><div class="name">Light aircraft</div></div><span class="word w-unlikely">Unlikely</span></div>
+   <div class="con"><b>Against:</b> no navigation lights, no tail visible, sound too high</div>
+  </div>
+  <div class="card blue small"><b>What a video can’t show:</b> who launched it, where it came from, or whether it carries explosives.</div>
+  <div class="row"><button class="btn ghost" onclick="show('vprofile')">Sources</button><button class="btn ghost" onclick="openSheet('words')">How sure?</button></div>
+  <button class="btn primary" onclick="show('vexport')">Make an evidence card</button>`};},
+vprofile(){ return {title:"Sources", html:`
+  <h2>Shahed-136 / Geran-2 type</h2>
+  <p class="small">Prototype content: real entries would link each line to its source.</p>
+  <h3>Origin</h3>
+  <div class="field"><div class="k"><span class="tag off">Confirmed</span> several independent sources</div><div class="v">Designed in Iran; produced in Russia as Geran-2</div></div>
+  <h3>Who uses it</h3>
+  <div class="field"><div class="k"><span class="tag off">Confirmed</span></div><div class="v">Russia, against Ukraine (since 2022)</div></div>
+  <div class="field"><div class="k"><span class="tag you">Reported</span> single or unverified sources</div><div class="v">Other users named in media reports</div></div>
+  <h3>Look-alikes</h3>
+  <div class="field"><div class="v">Gerbera-type decoys: same shape, foam and plywood, usually no warhead</div></div>
+  <div class="card amber small"><b>A video alone can’t prove origin.</b> Several countries fly this type, and decoys copy its look. Say “attack drone or decoy”, not “a Russian Shahed”.</div>
+  <p class="small">Reference list updated 2026-10-30 · model v2026.10</p>
+  <button class="btn primary" onclick="show('vexport')">Make an evidence card</button>`};},
+vexport(){ const old=SC().prov==="old"; return {title:"Evidence card", html:`
+  <div class="ecard">
+   <div class="hd">SkyCheck evidence card · AI assessment, not a confirmation</div>
+   <div><b>Clip:</b> ${old?"drone_vilnius_border.mp4":"shahed_svencionys.mp4"} · checked 15 Oct 2026, 09:20</div>
+   <div><b>Provenance:</b> ${old?"earlier copy found, 8 Sep 2024, another country":"no earlier copy found in 3 sources"}</div>
+   ${old?"":`<div><b>Could be:</b> Shahed-136/Geran-2 type (possible) · Gerbera-type decoy (possible) · light aircraft (unlikely)</div>
+   <div><b>Cannot show:</b> origin, operator, payload</div>`}
+   <div><b>Sources:</b> 3 linked · reference list 2026-10-30 · model v2026.10</div>
+   <div><b>Location:</b> ${st.loc?"included (editors only)":"removed"}</div>
+  </div>
+  <div class="toggle"><span>Include exact location (editors only)</span><input type="checkbox" ${st.loc?"checked":""} onchange="st.loc=this.checked; render()"></div>
+  ${st.loc?`<p class="small" style="color:var(--red)">Exact location can help an attacker aim (LT72). Never publish it.</p>`:""}
+  <button class="btn primary" onclick="show('vsaved')">Add to the article draft</button>
+  <button class="btn ghost" onclick="show('vsaved')">Download as PDF</button>
+  <p class="small">There is no public share button. A screenshot of a guess becomes a claim; this card keeps the uncertainty and the sources together.</p>`};},
+vsaved(){ return {title:"Saved", html:`
+  <h2>Added to your draft</h2>
+  <p>The card is in the article draft with its sources. If you publish, the wording stays “attack drone or decoy”.</p>
+  ${st.marked ? `<div class="card soft"><b>History</b><br><span class="small">15 Oct 09:20 · AI: attack drone or decoy (possible)<br>16 Oct 10:05 · Officials: Gerbera-type decoy · <b>your correction added</b>. The original answer is kept, not rewritten.</span></div>`
+    : `<button class="btn" onclick="st.marked=true; render()">Later: officials confirmed it (demo)</button>`}
+  <button class="btn ghost" onclick="restart()">Check another clip</button>`};}
+};
+function sil(k){
+  const s = {
+   frame:`<svg viewBox="0 0 100 64"><defs><filter id="b"><feGaussianBlur stdDeviation="2.2"/></filter></defs><rect width="100" height="64" fill="#1b222b"/><polygon points="50,18 72,44 50,40 28,44" fill="#000" filter="url(#b)"/></svg>`,
+   delta:`<svg viewBox="0 0 100 64"><polygon points="50,8 84,50 50,44 16,50" fill="#333"/><rect x="48" y="6" width="4" height="40" fill="#333"/><rect x="15" y="40" width="3" height="12" fill="#333"/><rect x="82" y="40" width="3" height="12" fill="#333"/></svg>`,
+   delta2:`<svg viewBox="0 0 100 64"><polygon points="50,14 76,48 50,43 24,48" fill="#666"/><rect x="48.5" y="12" width="3" height="33" fill="#666"/></svg>`
+  }[k];
+  const cap = {frame:"reader’s frame", delta:"reference", delta2:"reference"}[k];
+  return `<figure>${s}<figcaption>${cap}</figcaption></figure>`;
+}
+function toggleNote(t){ const i=st.notes.indexOf(t); i<0?st.notes.push(t):st.notes.splice(i,1); render(); }
+function applyNotes(){
+  const n=st.notes, has=t=>n.includes(t);
+  // asymmetric on purpose: a note that raises caution beats one that lowers it
+  st.correction = (has("Wings, not rotors")||has("Engine sound, not a buzz")) ? "raise"
+    : has("Blinking lights") ? "aircraft"
+    : (has("No sound")||has("Drifting with the wind")) ? "balloon" : null;
+  show("result");
+}
+
+const SHEETS = {
+why(){ const r=R(); return `<span class="tag ai">Why the AI thinks this</span><h3>What it noticed</h3><ul>${r.why.map(w=>`<li>${w}</li>`).join("")}</ul>
+  ${r.change && r.change.length ? `<h3>What would change the answer</h3><ul>${r.change.map(w=>`<li>${w}</li>`).join("")}</ul>`:""}
+  <h3>What it can’t know</h3><ul><li>What the object carries, or who flies it</li><li>Where it came from: a video alone can’t prove origin</li><li>Types it was never shown (new designs, decoys)</li></ul>
+  <p class="small">Reference types last updated 2026-10-30 · model v2026.10</p><button class="btn" onclick="closeSheet()">Close</button>`;},
+words(){ return `<h3>How sure is “Likely”?</h3>
+  <div class="cand"><span class="word w-likely">Likely</span><span class="small">Right at least 8 times in 10 for clips like this, in our tests</span></div>
+  <div class="cand"><span class="word w-possible">Possible</span><span class="small">Fits what we saw, but so do other types</span></div>
+  <div class="cand"><span class="word w-unlikely">Unlikely</span><span class="small">Checked and doesn’t fit well; shown so you know we looked</span></div>
+  <div class="cand"><b>Can’t tell</b><span class="small">Nothing reaches “Likely”, or the clip doesn’t hold enough</span></div>
+  <p class="small">We use words, not percentages. If any possible type can be armed, the amber safety card comes first, whatever the AI’s top guess. Red is used only for official alerts.</p>
+  <button class="btn" onclick="closeSheet()">Close</button>`;},
+privacy(){ return `<h3>What happens to your clip</h3>
+  <ul><li>It is checked <b>on this phone</b>. Nothing is uploaded to identify it.</li>
+  <li>Your exact location goes only to 112, and only if you call.</li>
+  <li>The clip is deleted after 30 days, or earlier when you choose.</li>
+  <li>Using your clip to improve the model is a separate yes/no question, off by default.</li></ul>
+  <button class="btn" onclick="closeSheet()">Close</button>`;}
+};
+function openSheet(k){ $("sheet").innerHTML=SHEETS[k](); $("sheet").classList.add("show"); $("shade").classList.add("show"); }
+function closeSheet(){ $("sheet").classList.remove("show"); $("shade").classList.remove("show"); }
+
+/* ---------- team view: value matrix + threshold ---------- */
+// Illustrative validation set: 1,000 checks, 100 of them truly warning-worthy (the HW4 worked example).
+const TH=[[0.1,99,520],[0.2,97,360],[0.3,90,180],[0.4,84,120],[0.5,77,85],[0.6,70,60],[0.7,60,38],[0.8,46,20],[0.9,28,8]];
+const W={TP:5,TN:3,FP:-3,FN:-5};
+function renderTeam(){
+  const i=st.th ?? 2, [t,tp,fp]=TH[i], fn=100-tp, tn=900-fp;
+  const rec=tp/100, prec=tp/(tp+fp), score=W.TP*tp+W.TN*tn+W.FP*fp+W.FN*fn;
+  const best=TH.reduce((b,r,j)=>{const v=W.TP*r[1]+W.TN*(900-r[2])+W.FP*r[2]+W.FN*(100-r[1]); return v>b.v?{v,j}:b;},{v:-1e9,j:0});
+  const okR=rec>=0.9, okP=prec>=1/3;
+  $("team").innerHTML = `
+  <h2>Value matrix: the safety-card function</h2>
+  <p class="small">Positive = at least one plausible match can be armed, so a caution is justified. Weights are ordinal (HW4), not money.</p>
+  <div class="vm">
+    <div></div><div class="hd">App shows the amber caution</div><div class="hd">App shows no caution</div>
+    <div class="hd">Danger really possible</div>
+    <div class="cellbox c-TP" onclick="jump('B')"><span class="w">+5</span><b>TP · correct warning</b><br>Rūta goes inside; a short scare. <u>Scenario B</u></div>
+    <div class="cellbox c-FN" onclick="jump('C')"><span class="w">−5</span><b>FN · missed warning</b><br>False calm, kids stay outside. <u>Scenario C</u></div>
+    <div class="hd">No real danger</div>
+    <div class="cellbox c-FP" onclick="jump('D')"><span class="w">−3</span><b>FP · false warning</b><br>Fear, a needless 112 call, alert fatigue. <u>Scenario D</u></div>
+    <div class="cellbox c-TN" onclick="jump('A')"><span class="w">+3</span><b>TN · correct non-warning</b><br>No panic; the pilot isn’t reported. <u>Scenario A</u></div>
+  </div>
+  <h3>Stage 1 threshold (internal “could be armed?” score): <b>${t.toFixed(1)}</b></h3>
+  <input type="range" min="0" max="${TH.length-1}" step="1" value="${i}" oninput="st.th=+this.value; renderTeam()" aria-label="Threshold">
+  <p class="small">Out of 1,000 illustrative checks, 100 of them truly dangerous (hypothetical numbers from HW4):</p>
+  <div class="meter">
+    <div><b class="${okR?'good':'bad'}">${Math.round(rec*100)}%</b><span>recall · target ≥ 90%</span></div>
+    <div><b class="${okP?'good':'bad'}">${Math.round(prec*100)}%</b><span>precision · floor ≥ 33%</span></div>
+    <div><b class="${fn>10?'bad':''}">${fn}</b><span>missed dangers</span></div>
+    <div><b>${fp}</b><span>false cautions</span></div>
+  </div>
+  <p class="small">Matrix score ${score.toLocaleString("en")} (TP×5 + TN×3 − FP×3 − FN×5). It peaks at ${TH[best.j][0].toFixed(1)}, where ${100-TH[best.j][1]} of 100 dangers are missed.
+  <b>So we don’t maximise the score.</b> A missed danger can hurt a child, so we first require recall ≥ 90%, then pick the highest threshold that meets it (0.3). Stage 2 then makes the false cautions cheap: amber, “not confirmed”, no automatic call.</p>
+  <h3>The thresholds we defend</h3>
+  <table class="th">
+   <tr><th>Threshold</th><th>Value</th><th>Why this value</th></tr>
+   <tr><td>Stage 1 armed-type screen</td><td>recall ≥ 90%</td><td>FN is the −5 cell; 90% is the HW4 recall-oriented point</td></tr>
+   <tr><td>Caution precision floor</td><td>≥ 1 in 3 justified</td><td>Below this, cautions become noise (alert fatigue)</td></tr>
+   <tr><td>“Likely”</td><td>≥ 80% right in tests</td><td>Rūta reads “likely” as “almost sure”; shown only after calibration</td></tr>
+   <tr><td>“Can’t tell”</td><td>nothing reaches “Likely”</td><td>An honest abstention beats a forced label</td></tr>
+   <tr><td>“Not covered”</td><td>novelty above the 95th percentile of training clips</td><td>Unknown objects must not get the nearest military label</td></tr>
+   <tr><td>Time to safe action</td><td>median ≤ 60 s</td><td>Rūta’s own job: “know in under a minute”</td></tr>
+   <tr><td>Appropriate reliance</td><td>≥ 80% of users</td><td>Follow the caution on “Can’t tell”, and catch the planted wrong answer</td></tr>
+   <tr><td>SUS usability score</td><td>≥ 68</td><td>The published average; below it the AI isn’t worth the effort</td></tr>
+  </table>`;
+}
+function jump(k){ mode="civ"; sc=k; restart(); drawPanel(); }
+
+function render(){
+  if(mode==="team"){ renderTeam(); return; }
+  const v=VIEWS[cur]();
+  $("title").textContent=v.title; $("screen").innerHTML=v.html; $("screen").scrollTop=0;
+  $("back").style.visibility = (v.back===false||!hist.length)?"hidden":"visible";
+  $("sig").textContent = SC().offline ? "▂ no data" : "▂▄▆ 4G";
+  $("clock").textContent = cur==="followup" ? "10:12" : mode==="ver" ? "09:20" : st.alertNow ? "19:34" : "19:31";
+  $("modelabel").textContent = mode==="ver" ? "Verify" : "Quick check";
+  $("sid").textContent = sc+" · "+cur;
+}
+// Deep links for screenshots: #mode=civ&sc=B&s=result&sheet=why&st={...}&phone=1
+function fromHash(){
+  const p=new URLSearchParams(location.hash.slice(1));
+  if(p.get("phone")) document.body.classList.add("phoneonly");
+  mode=p.get("mode")||"civ"; sc=p.get("sc")||(mode==="ver"?"T1":"B");
+  reset(); if(p.get("st")) Object.assign(st, JSON.parse(p.get("st")));
+  cur=p.get("s")||(mode==="ver"?"vhome":"home"); const home=mode==="ver"?"vhome":"home"; hist = cur===home?[]:[home];
+  drawPanel(); if(mode!=="team") render();
+  if(p.get("sheet")) openSheet(p.get("sheet"));
+}
+fromHash();
+</script>
+</body>
+</html>
